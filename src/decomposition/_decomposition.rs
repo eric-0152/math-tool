@@ -126,33 +126,32 @@ impl Matrix {
     /// 
     /// ### Cholesky Decomposition:
     /// &nbsp; 
-    pub fn cholesky_decomposition(self: &Self){}
-    // pub fn cholesky_decomposition(self: &Self) -> Result<(Matrix, Matrix), String> {
-        // match self.is_positive_definite() {
-        //     x if x == true => {
-        //         let mut matrix_l: Matrix = Matrix::zeros(self.row, self.col);
-        //         for r in 0..matrix_l.row {
-        //             for c in 0..(r + 1) {
-        //                 let mut summation: f64 = 0.0;
-        //                 if r == c {
-        //                     for e in 0..c {
-        //                         summation += matrix_l.entries[c][e].powi(2);
-        //                     }
-        //                     matrix_l.entries[r][c] = (self.entries[c][c] - summation).sqrt();
-        //                 } else {
-        //                     for e in 0..c {
-        //                         summation += matrix_l.entries[r][e] * matrix_l.entries[c][e];
-        //                     }
-        //                     matrix_l.entries[r][c] = (self.entries[r][c] - summation) / matrix_l.entries[c][c];
-        //                 }
-        //             }
-        //         }
+    pub fn cholesky_decomposition(self: &Self) -> Result<(Matrix, Matrix), String> {
+        match self.is_positive_definite() {
+            x if x == true => {
+                let mut matrix_l: Matrix = Matrix::zeros(self.row, self.col);
+                for r in 0..matrix_l.row {
+                    for c in 0..(r + 1) {
+                        let mut summation: f64 = 0.0;
+                        if r == c {
+                            for e in 0..c {
+                                summation += matrix_l.entries[c][e].powi(2);
+                            }
+                            matrix_l.entries[r][c] = (self.entries[c][c] - summation).sqrt();
+                        } else {
+                            for e in 0..c {
+                                summation += matrix_l.entries[r][e] * matrix_l.entries[c][e];
+                            }
+                            matrix_l.entries[r][c] = (self.entries[r][c] - summation) / matrix_l.entries[c][c];
+                        }
+                    }
+                }
 
-        //         return Ok((matrix_l.copy(), matrix_l.transpose()));
-        //     }
+                return Ok((matrix_l.copy(), matrix_l.transpose()));
+            }
 
-        //     _ => {return Err("Value Error: This matrix is not a positive definite matrix.".to_string());}
-        // }
+            _ => {return Err("Value Error: This matrix is not a positive definite matrix.".to_string());}
+        }
 
-    // }
+    }
 }
