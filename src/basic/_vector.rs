@@ -16,17 +16,17 @@ impl Vector {
     }
 
     /// Return the vector that round to the digit after decimal point.
-    pub fn round(self: &Self, digit: u32) -> Vector{
+    pub fn round(self: &Self, digit: u32) -> Vector {
         let scale: f64 = 10_i32.pow(digit as u32) as f64;
-        let mut result_vector = Self::zeros(self.size);
+        let mut result_vector: Vector = Self::zeros(self.size);
 
         for s in 0..self.size {
             result_vector.entries[s] = (scale * self.entries[s]).round();
-            
+
             if result_vector.entries[s] >= 1.0 || result_vector.entries[s] <= -1.0 {
                 result_vector.entries[s] /= scale;
             } else if result_vector.entries[s].is_nan() {
-                    continue;
+                continue;
             } else {
                 result_vector.entries[s] = 0.0;
             }
@@ -55,13 +55,13 @@ impl Vector {
         }
     }
 
-    /// Return a vector contains a arithmetic sequence.
-    pub fn arithmetic_sequence(start: f64, end: f64, step: f64) -> Vector {
-        let mut result_vector = vec![start];
-        let mut current_element = start;
-        let mut size: usize = 0;
+    /// Return a vector contains a arithmetic sequence. [[start, end]]
+    pub fn arithmetic_sequence(start: f64, end: f64, interval: f64) -> Vector {
+        let mut result_vector: Vec<f64> = vec![start];
+        let mut current_element: f64 = start;
+        let mut size: usize = 1;
         while current_element < end {
-            current_element += step;
+            current_element += interval;
             result_vector.push(current_element);
             size += 1;
         }
@@ -72,16 +72,44 @@ impl Vector {
         }
     }
 
+    /// Return a vector contains a arithmetic sequence. [start, end)
+    pub fn fixed_size_arithmetic_sequence(start: f64, end: f64, vector_size: usize) -> Vector {
+        let mut result_vector: Vec<f64> = vec![start];
+        let mut current_element: f64 = start;
+        let mut interval: f64 = (end - start) / vector_size as f64;
+        let mut step: usize = 1;
+        while step < vector_size {
+            current_element += interval;
+            result_vector.push(current_element);
+            step += 1;
+        }
+
+        Vector {
+            entries: result_vector,
+            size: vector_size,
+        }
+    }
+
     pub fn random_vector(m: usize, min: f64, max: f64) -> Vector {
         let mut generator: rand::prelude::ThreadRng = rand::rng();
-        let mut entries: Vec<f64> = Vec::new(); 
+        let mut entries: Vec<f64> = Vec::new();
         for _ in 0..m {
             entries.push(generator.random_range(min..max));
-        } 
+        }
         Vector {
             entries: entries,
             size: m,
         }
+    }
+
+    /// Sum up all the entries in vector.
+    pub fn entries_sum(self: &Self) -> f64 {
+        let mut summation: f64 = 0.0;
+        for e in 0..self.size {
+            summation += self.entries[e];
+        }
+
+        summation
     }
 
     pub fn clone(self: &Self) -> Vector {
@@ -92,19 +120,61 @@ impl Vector {
     }
 
     pub fn reverse(self: &Self) -> Vector {
-        let mut new_entries = self.entries.clone();
+        let mut new_entries: Vec<f64> = self.entries.clone();
         new_entries.reverse();
 
-        Vector {entries: new_entries, size: self.size}
+        Vector {
+            entries: new_entries,
+            size: self.size,
+        }
     }
 
     pub fn transpose(self: &Self) -> Matrix {
-        let mut result_matrix = Matrix::zeros(self.size, 1);
-        for r in 0..result_matrix.row {
-            result_matrix.entries[r][0] = self.entries[r];
+        let mut result_matrix: Matrix = Matrix::zeros(1, self.size);
+        for r in 0..result_matrix.col {
+            result_matrix.entries[0][r] = self.entries[r];
         }
 
         result_matrix
+    }
+
+    pub fn append_Vector(self: &Self, vector: &Vector) -> Vector {
+        let mut result_vector = self.clone();
+        for e in 0..vector.size {
+            result_vector.entries.push(vector.entries[e]);
+        }
+        result_vector.size += vector.size;
+        
+        result_vector
+    }
+
+    /// Transform a Vector into a Matrix.
+    ///
+    /// If axis == 0 : vector as a row.
+    ///
+    /// If axis == 1 : vector as a column.
+    pub fn to_Matrix(self: &Self, axis: usize) -> Result<Matrix, String> {
+        match axis {
+            x if x == 0 => {
+                return Ok(Matrix {
+                    entries: vec![self.entries.clone()],
+                    row: 1,
+                    col: self.size,
+                });
+            }
+
+            x if x == 1 => {
+                return Ok(Matrix {
+                    entries: self.transpose().transpose().entries,
+                    row: self.size,
+                    col: 1,
+                });
+            }
+
+            _ => {
+                return Err("Input Error: Input axis is not valid.".to_string());
+            }
+        }
     }
 
     pub fn swap_element(self: &Self, a: usize, b: usize) -> Result<Vector, String> {
@@ -112,7 +182,7 @@ impl Vector {
             return Err("Input Error: The input a or b is out of bound.".to_string());
         }
 
-        let mut result_Vector = self.clone();
+        let mut result_Vector: Vector = self.clone();
         result_Vector.entries[a] = self.entries[b];
         result_Vector.entries[b] = self.entries[a];
 
@@ -120,12 +190,12 @@ impl Vector {
     }
 
     /// Add two vector element-wise.
-    pub fn add_Vector(self: &Self, vector: Vector) -> Result<Vector, String> {
+    pub fn add_Vector(self: &Self, vector: &Vector) -> Result<Vector, String> {
         if self.size != vector.size {
             return Err("Input Error: The size of input vector does not match.".to_string());
         }
 
-        let mut result_vector = self.clone();
+        let mut result_vector: Vector = self.clone();
         for s in 0..self.size {
             result_vector.entries[s] += vector.entries[s];
         }
@@ -139,7 +209,7 @@ impl Vector {
             return Err("Input Error: The size of input vector does not match.".to_string());
         }
 
-        let mut result_vector = self.clone();
+        let mut result_vector: Vector = self.clone();
         for s in 0..self.size {
             result_vector.entries[s] -= vector.entries[s];
         }
@@ -148,7 +218,7 @@ impl Vector {
     }
 
     pub fn multiply_scalar(self: &Self, scalar: f64) -> Vector {
-        let mut result_vector = Self::zeros(self.size);
+        let mut result_vector: Vector = Self::zeros(self.size);
         for s in 0..self.size {
             result_vector.entries[s] = scalar * self.entries[s];
         }
@@ -156,7 +226,7 @@ impl Vector {
         result_vector
     }
 
-    pub fn inner_product(self: &Vector, vector: &Vector) -> Result<f64, String> {
+    pub fn inner_product(self: &Self, vector: &Vector) -> Result<f64, String> {
         if self.size != vector.size {
             return Err("Input Error: The size of two vectors do not match.".to_string());
         }
@@ -193,5 +263,33 @@ impl Vector {
         }
 
         disatnce.sqrt()
+    }
+
+    pub fn to_diagonal(self: &Self) -> Matrix {
+        let mut result_matrix: Matrix = Matrix::zeros(self.size, self.size);
+        for d in 0..self.size {
+            result_matrix.entries[d][d] = self.entries[d];
+        }
+
+        result_matrix
+    }
+
+    pub fn normalize(self: &Self) -> Vector {
+        let norm: f64 = self.euclidean_distance();
+        let mut normal_vector: Vector = self.clone();
+        for e in 0..self.size {
+            normal_vector.entries[e] = normal_vector.entries[e] / norm;
+        }
+
+        normal_vector
+    }
+
+    pub fn square_root(self: &Self) -> Vector {
+        let mut result_matrix: Vector = self.clone();
+        for e in 0..self.size {
+            result_matrix.entries[e] = result_matrix.entries[e].sqrt();
+        }
+
+        result_matrix
     }
 }

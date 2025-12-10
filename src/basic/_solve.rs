@@ -1,7 +1,7 @@
 use crate::matrix::Matrix;
 use crate::vector::Vector;
 
-/// Given a upper triangular matrix ***A*** and vector ***b***, return a vector ***x*** 
+/// Given a upper triangular matrix ***A*** and vector ***b***, return a vector ***x***
 /// such that ***Ax*** = ***b***.
 pub fn upper_triangular(matrix: &Matrix, b: &Vector) -> Result<Vector, String> {
     if matrix.row != b.size {
@@ -15,7 +15,8 @@ pub fn upper_triangular(matrix: &Matrix, b: &Vector) -> Result<Vector, String> {
     for diag in (0..min_range).rev() {
         vector_x.entries[diag] = b.entries[diag] / matrix.entries[diag][diag];
         for prev in ((diag + 1)..min_range).rev() {
-            vector_x.entries[diag] -= matrix.entries[diag][prev] * vector_x.entries[prev] / matrix.entries[diag][diag];
+            vector_x.entries[diag] -=
+                matrix.entries[diag][prev] * vector_x.entries[prev] / matrix.entries[diag][diag];
         }
     }
 
@@ -29,7 +30,7 @@ pub fn upper_triangular(matrix: &Matrix, b: &Vector) -> Result<Vector, String> {
     Ok(vector_x)
 }
 
-/// Given a lower triangular matrix ***A*** and vector ***b***, return a vector ***x*** 
+/// Given a lower triangular matrix ***A*** and vector ***b***, return a vector ***x***
 /// such that ***Ax*** = ***b***.
 pub fn lower_triangular(matrix: &Matrix, b: &Vector) -> Result<Vector, String> {
     if matrix.row != b.size {
@@ -43,7 +44,8 @@ pub fn lower_triangular(matrix: &Matrix, b: &Vector) -> Result<Vector, String> {
     for diag in 0..min_range {
         vector_x.entries[diag] = b.entries[diag] / matrix.entries[diag][diag];
         for prev in 0..diag {
-            vector_x.entries[diag] -= matrix.entries[diag][prev] * vector_x.entries[prev] / matrix.entries[diag][diag]; 
+            vector_x.entries[diag] -=
+                matrix.entries[diag][prev] * vector_x.entries[prev] / matrix.entries[diag][diag];
         }
     }
 
@@ -57,12 +59,14 @@ pub fn lower_triangular(matrix: &Matrix, b: &Vector) -> Result<Vector, String> {
     Ok(vector_x)
 }
 
-
 /// Return the tuple contains matrix, b and permutation after Gaussian Jordan elimination.
-/// 
-/// The algorithm will swap rows if needed (diagnal has 0), if the order of rows is 
+///
+/// The algorithm will swap rows if needed (diagnal has 0), if the order of rows is
 /// important, use swap_with_permutation() to yield the correct order.
-pub fn gaussian_jordan_elimination(matrix: &Matrix, b: &Vector) -> Result<(Matrix, Vector, Matrix), String> {    
+pub fn gauss_jordan_elimination(
+    matrix: &Matrix,
+    b: &Vector,
+) -> Result<(Matrix, Vector, Matrix), String> {
     if matrix.row != b.size {
         return Err("Input Error: The size of input matrix and vector b do not match.".to_string());
     }
@@ -94,17 +98,17 @@ pub fn gaussian_jordan_elimination(matrix: &Matrix, b: &Vector) -> Result<(Matri
             result_vector.entries[r] -= scale * result_vector.entries[d];
             for e in 0..matrix.col {
                 result_matrix.entries[r][e] -= scale * result_matrix.entries[d][e];
-            }  
+            }
         }
     }
-    
+
     // Reduce to diagonal form
-    for c in  (0..result_matrix.col.min(result_matrix.row)).rev() {
+    for c in (0..result_matrix.col.min(result_matrix.row)).rev() {
         if result_matrix.entries[c][c] == 0.0 {
             continue;
         }
 
-        for r in  (0..c.min(result_matrix.row)).rev() {
+        for r in (0..c.min(result_matrix.row)).rev() {
             let scale = result_matrix.entries[r][c] / result_matrix.entries[c][c];
             result_matrix.entries[r][c] -= scale * result_matrix.entries[c][c];
             result_vector.entries[r] -= scale * result_vector.entries[c];
