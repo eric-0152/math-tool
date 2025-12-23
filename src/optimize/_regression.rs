@@ -45,7 +45,7 @@ pub fn polynomial_kernel(
     for _ in 0..degree {
         kernel_matrix = kernel_matrix.append(&powered_x, 1)?;
         for s in 0..x.shape.0 {
-            powered_x.real[s][0] *= x.real[s][0];
+            powered_x.entries[s][0] *= x.entries[s][0];
         }
     }
 
@@ -90,7 +90,7 @@ pub fn exponential_kernel(x: &Matrix, y: &Matrix) -> Result<(Matrix, Matrix), St
 
     let mut fx = y.clone();
     for e in 0..fx.shape.0 {
-        fx.real[e][0] = fx.real[e][0].ln();
+        fx.entries[e][0] = fx.entries[e][0].ln();
     }
 
     Ok((kernel_matrix, fx))
@@ -128,17 +128,17 @@ pub fn gaussian_1d_kernel(x: &Matrix, y: &Matrix) -> Result<(Matrix, Matrix), St
         return Err("Input Error: The size of x and y do not match.".to_string());
     }
 
-    let average: f64 = x.entries_sum() / x.shape.0 as f64;
+    let average: f64 = x.entries_sum().re / x.shape.0 as f64;
     let mut kernel_matrix: Matrix = Matrix::ones(x.shape.0, 1);
     kernel_matrix = kernel_matrix.append(x, 1)?;
     for e in 0..kernel_matrix.shape.0 {
-        kernel_matrix.real[e][1] = -(kernel_matrix.real[e][1] - average).powi(2);
+        kernel_matrix.entries[e][1] = -(kernel_matrix.entries[e][1] - average).powi(2);
     }
 
     let mut fx = y.clone();
 
     for e in 0..fx.shape.0 {
-        fx.real[e][0] = 2.0 * fx.real[e][0].ln();
+        fx.entries[e][0] = 2.0 * fx.entries[e][0].ln();
     }
 
     Ok((kernel_matrix, fx))

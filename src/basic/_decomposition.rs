@@ -1,3 +1,5 @@
+use num_complex::Complex64;
+
 use crate::matrix::Matrix;
 use crate::eigen;
 
@@ -21,10 +23,10 @@ impl Matrix {
         let mut permutation: Matrix = Matrix::identity(self.shape.0);
         for c in 0..self.shape.1.min(self.shape.0) {
             // If the pivot is 0.0, swap to non zero.
-            if matrix_u.real[c][c] == 0.0 {
+            if matrix_u.entries[c][c] == Complex64::ZERO {
                 let mut is_swap = false;
                 for r in (c + 1)..matrix_u.shape.0 {
-                    if matrix_u.real[r][c] != 0.0 {
+                    if matrix_u.entries[r][c] != Complex64::ZERO {
                         matrix_u = matrix_u.swap_row(c, r).unwrap();
                         matrix_l = matrix_l.swap_row(c, r).unwrap();
                         permutation = permutation.swap_row(c, r).unwrap();
@@ -38,9 +40,10 @@ impl Matrix {
             }
 
             for r in (c + 1)..self.shape.0 {
-                matrix_l.real[r][c] = matrix_u.real[r][c] / matrix_u.real[c][c];
+                matrix_l.entries[r][c] = matrix_u.entries[r][c] / matrix_u.entries[c][c];
                 for e in 0..self.shape.1 {
-                    matrix_u.real[r][e] -= matrix_l.real[r][c] * matrix_u.real[c][e];
+                    let row_element: Complex64 = matrix_u.entries[c][e];
+                    matrix_u.entries[r][e] -= matrix_l.entries[r][c] * row_element;
                 }
             }
         }
@@ -70,7 +73,7 @@ impl Matrix {
         let permutation: Matrix = tuple.2;
         let mut matrix_d: Matrix = Matrix::identity(self.shape.0);
         for d in 0..self.shape.0.min(self.shape.1) {
-            matrix_d.real[d][d] = matrix_u.real[d][d];
+            matrix_d.entries[d][d] = matrix_u.entries[d][d];
         }
 
         match matrix_d.inverse() {
@@ -94,18 +97,18 @@ impl Matrix {
         let mut matrix_l: Matrix = Matrix::zeros(self.shape.0, self.shape.1);
         for r in 0..matrix_l.shape.0 {
             for c in 0..(r + 1) {
-                let mut summation: f64 = 0.0;
+                let mut summation: Complex64 = Complex64::ZERO;
                 if r == c {
                     for e in 0..c {
-                        summation += matrix_l.real[c][e].powi(2);
+                        summation += matrix_l.entries[c][e].powi(2);
                     }
-                    matrix_l.real[r][c] = (self.real[c][c] - summation).sqrt();
+                    matrix_l.entries[r][c] = (self.entries[c][c] - summation).sqrt();
                 } else {
                     for e in 0..c {
-                        summation += matrix_l.real[r][e] * matrix_l.real[c][e];
+                        summation += matrix_l.entries[r][e] * matrix_l.entries[c][e];
                     }
-                    matrix_l.real[r][c] =
-                        (self.real[r][c] - summation) / matrix_l.real[c][c];
+                    matrix_l.entries[r][c] =
+                        (self.entries[r][c] - summation) / matrix_l.entries[c][c];
                 }
             }
         }
@@ -121,15 +124,14 @@ impl Matrix {
     pub fn ldlt_decomposition(self: &Self) -> Result<(Matrix, Matrix, Matrix), String> {
         match self.cholesky_decomposition() {
             Err(error_msg) => Err(error_msg),
-            Ok(tuple) => {
-                let matrix_c: Matrix = tuple.0;
+            Ok((matrix_c, _)) => {
                 let mut matrix_d: Matrix = Self::identity(self.shape.0);
                 let mut matrix_l: Matrix = matrix_c.clone();
                 for d in 0..matrix_l.shape.1 {
-                    matrix_d.real[d][d] = matrix_c.real[d][d].powi(2);
-                    let inverse_sqrt_diagnol: f64 = matrix_d.real[d][d].sqrt();
+                    matrix_d.entries[d][d] = matrix_c.entries[d][d].powi(2);
+                    let inverse_sqrt_diagnol: Complex64 = matrix_d.entries[d][d].sqrt();
                     for r in d..matrix_l.shape.0 {
-                        matrix_l.real[r][d] = matrix_c.real[r][d] / inverse_sqrt_diagnol;
+                        matrix_l.entries[r][d] = matrix_c.entries[r][d] / inverse_sqrt_diagnol;
                     }
                 }
 
@@ -161,7 +163,7 @@ impl Matrix {
                 for r in 0..matrix_r.shape.0 {
                     let orthonormal_col: Matrix = matrix_q.get_column_vector(r)?;
                     for c in r..matrix_r.shape.1 {
-                        matrix_r.real[r][c] = (&matrix.get_column_vector(c)? * &orthonormal_col).real[0][0];
+                        matrix_r.entries[r][c] = (&matrix.get_column_vector(c)?.transpose() * &orthonormal_col).entries[0][0];
                     }
                 }
 
@@ -171,7 +173,7 @@ impl Matrix {
                     matrix_r = tmp;
                 }
 
-                Ok((matrix_q.replace_nan(), matrix_r.replace_nan()))
+                Ok((matrix_q, matrix_r))
             }
         }
     }
@@ -180,41 +182,39 @@ impl Matrix {
     /// Return the tuple ***(U, Σ, V^T)***
     pub fn singular_value_decomposition(self: &Self) -> Result<(Matrix, Matrix, Matrix), String> {
         let ata: Matrix = &self.transpose() * self;
-        match eigen::eigenvalue(&ata, 1000, 1e-16) {
+        match eigen::eigenvalue(&ata, 2000, 1e-16) {
             Err(error_msg) => Err(error_msg),
-            Ok(tuple) => {
+            Ok((mut eigenvalue, _)) => {
                 // Get eigenvalue
                 const THERESHOLD: f64 = 1e-08;
-                let mut eigenvalue: Matrix = tuple.0;
                 for e in (0..eigenvalue.shape.0).rev() {
-                    if eigenvalue.real[e][0] < THERESHOLD {
+                    if eigenvalue.entries[e][0].re.abs() < THERESHOLD && eigenvalue.entries[e][0].im.abs() < THERESHOLD {
                         eigenvalue = eigenvalue.remove_row(e)?;
                     }
                 }
 
-                // Build V^T
                 let mut vt: Matrix = Matrix::zeros(0, 0);
                 for e in 0..eigenvalue.shape.0 {
-                    let eigenvector: Matrix =
-                        eigen::eigenvector(&ata, eigenvalue.real[e][0])?;
+                    let eigenvector: Matrix = eigen::eigenvector(&ata, eigenvalue.entries[e][0])?;
                     for c in 0..eigenvector.shape.1 {
                         vt = vt
                             .append(
                                 &eigenvector.get_column_vector(c)?.normalize(),
-                                0,
+                                1,
                             )
                             ?;
+
                     }
                 }
 
                 // Build Σ
-                let sigma: Matrix = eigenvalue.square_root();
-                
+                let sigma: Matrix = eigenvalue.square_root().to_diagonal();
+
                 // Build U
                 let mut u: Matrix = Matrix::zeros(0, 0);
                 for r in 0..vt.shape.0 {
                     u = u
-                        .append(&(&(self * &vt.get_row_vector(r)?) * (&(1.0_f64 / sigma.real[r][r]))), 1,)
+                        .append(&(&(self * &vt.get_column_vector(r)?) * (&(1.0_f64 / sigma.entries[r][r]))), 1,)
                         ?;
                 }
 

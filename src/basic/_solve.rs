@@ -1,3 +1,6 @@
+use std::os::unix::raw::nlink_t;
+
+use num_complex::Complex64;
 use crate::matrix::Matrix;
 
 /// Given a upper triangular matrix ***A*** and vector ***b***, return a vector ***x***
@@ -12,16 +15,17 @@ pub fn upper_triangular(matrix: &Matrix, b: &Matrix) -> Result<Matrix, String> {
     let mut vector_x: Matrix = Matrix::zeros(matrix.shape.1, 1);
     let min_range: usize = matrix.shape.0.min(matrix.shape.1);
     for diag in (0..min_range).rev() {
-        vector_x.real[diag][0] = b.real[diag][0] / matrix.real[diag][diag];
+        vector_x.entries[diag][0] = b.entries[diag][0] / matrix.entries[diag][diag];
         for prev in ((diag + 1)..min_range).rev() {
-            vector_x.real[diag][0] -=
-                matrix.real[diag][prev] * vector_x.real[prev][0] / matrix.real[diag][diag];
+            let element: Complex64 = vector_x.entries[prev][0];
+            vector_x.entries[diag][0] -=
+                matrix.entries[diag][prev] * element / matrix.entries[diag][diag];
         }
     }
 
     // Check consistency
     for e in 0..vector_x.shape.0 {
-        if vector_x.real[e][0].is_nan() {
+        if vector_x.entries[e][0].is_nan() {
             return Err("Value Error: The system is not consistent".to_string());
         }
     }
@@ -43,15 +47,16 @@ pub fn lower_triangular(matrix: &Matrix, b: &Matrix) -> Result<Matrix, String> {
     let mut vector_x: Matrix = Matrix::zeros(matrix.shape.1, 1);
     let min_range = matrix.shape.0.min(matrix.shape.1);
     for diag in 0..min_range {
-        vector_x.real[diag][0] = b.real[diag][0] / matrix.real[diag][diag];
+        vector_x.entries[diag][0] = b.entries[diag][0] / matrix.entries[diag][diag];
         for prev in 0..diag {
-            vector_x.real[diag][0] -= matrix.real[diag][prev] * vector_x.real[prev][0] / matrix.real[diag][diag];
+            let element: Complex64 = vector_x.entries[prev][0];
+            vector_x.entries[diag][0] -= matrix.entries[diag][prev] * element / matrix.entries[diag][diag];
         }
     }
 
     // Check consistency
     for e in 0..vector_x.shape.0 {
-        if vector_x.real[e][0].is_nan() {
+        if vector_x.entries[e][0].is_nan() {
             return Err("Value Error: The system is not consistent".to_string());
         }
     }
@@ -83,10 +88,10 @@ pub fn gauss_jordan_elimination(
     let mut last_operate: i32 = 0;
     while pivot_row < result_matrix.shape.0 && pivot_col < result_matrix.shape.1 {
         // If the pivot is 0.0, swap to non zero.
-        if result_matrix.real[pivot_row][pivot_col].abs() < THERESHOLD {
+        if result_matrix.entries[pivot_row][pivot_col].norm() < THERESHOLD {
             let mut is_swap = false;
             for r in (pivot_row + 1)..result_matrix.shape.0 {
-                if result_matrix.real[r][pivot_col] != 0.0 {
+                if result_matrix.entries[r][pivot_col] != Complex64::ZERO {
                     result_matrix = result_matrix.swap_row(pivot_row, r).unwrap();
                     result_vector = result_vector.swap_row(pivot_row, r).unwrap();
                     permutation = permutation.swap_row(pivot_row, r).unwrap();
@@ -102,18 +107,19 @@ pub fn gauss_jordan_elimination(
         }
 
         for r in (pivot_row + 1)..result_matrix.shape.0 {
-            let scale: f64 = result_matrix.real[r][pivot_col] / result_matrix.real[pivot_row][pivot_col];
-            result_vector.real[r][0] -= scale * result_vector.real[pivot_row][0];
+            let scale: Complex64 = result_matrix.entries[r][pivot_col] / result_matrix.entries[pivot_row][pivot_col];
+            let element: Complex64 = result_vector.entries[pivot_row][0];
+            result_vector.entries[r][0] -= scale * element;
             for e in 0..matrix.shape.1 {
-                result_matrix.real[r][e] -= scale * result_matrix.real[pivot_row][e];
+                let element: Complex64 = result_matrix.entries[pivot_row][e];
+                result_matrix.entries[r][e] -= scale * element;
             }
         }
-
         pivot_row += 1;
         pivot_col += 1;
         last_operate = 1;
     }
-
+    
     // Reduce to diagonal form
     if last_operate == 0 {
         pivot_col -= 1;
@@ -123,14 +129,15 @@ pub fn gauss_jordan_elimination(
     }
     while pivot_row > 0 {
         for r in 0..pivot_row {
-            if result_matrix.real[pivot_row][pivot_col].abs() < THERESHOLD {
+            if result_matrix.entries[pivot_row][pivot_col].norm() < THERESHOLD {
                 continue;
             }
-            let scale: f64 =
-                result_matrix.real[r][pivot_col] / result_matrix.real[pivot_row][pivot_col];
-            result_vector.real[r][0] -= scale * result_vector.real[pivot_row][0];
-            for c in pivot_col..result_matrix.shape.1 {
-                result_matrix.real[r][c] -= scale * result_matrix.real[pivot_row][c];
+            let scale: Complex64 = result_matrix.entries[r][pivot_col] / result_matrix.entries[pivot_row][pivot_col];
+            let element: Complex64 = result_vector.entries[pivot_row][0];
+            result_vector.entries[r][0] -= scale * element;
+            for e in pivot_col..result_matrix.shape.1 {
+                let element: Complex64 = result_matrix.entries[pivot_row][e];
+                result_matrix.entries[r][e] -= scale * element;
             }
         }
         pivot_row -= 1;
@@ -140,12 +147,12 @@ pub fn gauss_jordan_elimination(
     // Pivots -> 1
     for r in 0..result_matrix.shape.0 {
         for c in r..result_matrix.shape.1 {
-            if result_matrix.real[r][c] != 0.0 {
-                let scale: f64 = result_matrix.real[r][c];
+            if result_matrix.entries[r][c] != Complex64::ZERO {
+                let scale: Complex64 = result_matrix.entries[r][c];
                 for e in c..result_matrix.shape.1 {
-                    result_matrix.real[r][e] /= scale;
+                    result_matrix.entries[r][e] /= scale;
                 }
-                result_vector.real[r][0] /= scale;
+                result_vector.entries[r][0] /= scale;
 
                 break;
             }
@@ -166,7 +173,7 @@ pub fn null_space(matrix: &Matrix) -> Matrix {
     let mut null_relate: Matrix = Matrix::zeros(0, 0);
     for r in (0..rref.shape.0.min(rref.shape.1)).rev() {
         let mut pivot = r;
-        while rref.real[r][pivot].abs() < THERESHOLD {
+        while rref.entries[r][pivot].norm() < THERESHOLD {
             pivot += 1;
             if pivot == rref.shape.1 {
                 break;
@@ -174,13 +181,13 @@ pub fn null_space(matrix: &Matrix) -> Matrix {
         }
 
         for right in (pivot + 1)..rref.shape.1 {
-            if rref.real[r][right].abs() < THERESHOLD {
+            if rref.entries[r][right].norm() < THERESHOLD {
                 continue;
             }
 
             let mut relate_vector: Matrix = Matrix::zeros(rref.shape.1, 1);
-            relate_vector.real[pivot][0] = -1.0 * rref.real[r][right];
-            relate_vector.real[right][0] = 1.0;
+            relate_vector.entries[pivot][0] = -1.0 * rref.entries[r][right];
+            relate_vector.entries[right][0] = Complex64::ONE;
             null_relate = null_relate.append(&relate_vector, 1).unwrap();
         }
     }
@@ -189,12 +196,12 @@ pub fn null_space(matrix: &Matrix) -> Matrix {
     let mut null_basis: Matrix = Matrix::zeros(0, 0);
     for r in (0..null_relate.shape.0).rev() {
         let mut null_vector: Matrix = Matrix::zeros(rref.shape.1, 1);
-        null_vector.real[r][0] = 1.0;
+        null_vector.entries[r][0] = Complex64::ONE;
         for c in 0..null_relate.shape.1 {
-            if null_relate.real[r][c] == 1.0 {
+            if null_relate.entries[r][c] == Complex64::ONE {
                 for e in 0..r {
-                    if null_relate.real[e][c] != 0.0 {
-                        null_vector.real[e][0] = null_relate.real[e][c];
+                    if null_relate.entries[e][c] != Complex64::ZERO {
+                        null_vector.entries[e][0] = null_relate.entries[e][c];
                         break;
                     }
                 }
@@ -203,7 +210,7 @@ pub fn null_space(matrix: &Matrix) -> Matrix {
 
         let mut element_num: i32 = 0;
         for e in 0..null_vector.shape.0 {
-            if null_vector.real[e][0] != 0.0 {
+            if null_vector.entries[e][0] != Complex64::ZERO {
                 element_num += 1;
             }
             if element_num == 2 {
@@ -217,7 +224,7 @@ pub fn null_space(matrix: &Matrix) -> Matrix {
     for c in 0..rref.shape.1 {
         let mut zero_num: usize = 0;
         for r in 0..rref.shape.0 {
-            if rref.real[r][c] == 0.0 {
+            if rref.entries[r][c] == Complex64::ZERO {
                 zero_num += 1
             } else {
                 break;
@@ -226,7 +233,7 @@ pub fn null_space(matrix: &Matrix) -> Matrix {
 
         if zero_num == rref.shape.0 {
             let mut zero_vector: Matrix = Matrix::zeros(rref.shape.1, 1);
-            zero_vector.real[c][0] = 1.0;
+            zero_vector.entries[c][0] = Complex64::ONE;
             null_basis = null_basis.append(&zero_vector, 1).unwrap();
         }
     }

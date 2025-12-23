@@ -1,4 +1,5 @@
-use crate::matrix::{self, Matrix};
+use num_complex::Complex64;
+use crate::matrix::Matrix;
 
 impl Matrix {
     // / Return the matrix which contains orthonormal basis.
@@ -20,7 +21,7 @@ impl Matrix {
             let mut new_orthonormal: Matrix = current_col.clone();
             for pre_c in 0..c {
                 let previous_orthonormal: Matrix = orthonormal_matrix.get_column_vector(pre_c)?;
-                let dot_product: f64 = (&previous_orthonormal * &current_col).real[0][0];
+                let dot_product: Complex64 = (&previous_orthonormal.transpose() * &current_col).entries[0][0];
                 new_orthonormal = &new_orthonormal - &(&previous_orthonormal * &dot_product);
             }
 

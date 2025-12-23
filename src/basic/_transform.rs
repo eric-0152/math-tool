@@ -10,10 +10,10 @@ impl Matrix {
         }
 
         let mut rotation_matrix: Matrix = Matrix::identity(self.shape.0);
-        rotation_matrix.real[i][i] = angle.cos();
-        rotation_matrix.real[j][j] = angle.cos();
-        rotation_matrix.real[j][i] = angle.sin();
-        rotation_matrix.real[i][j] = -angle.sin();
+        rotation_matrix.entries[i][i].re = angle.cos();
+        rotation_matrix.entries[j][j].re = angle.cos();
+        rotation_matrix.entries[j][i].re = angle.sin();
+        rotation_matrix.entries[i][j].re = -angle.sin();
 
         Ok(&rotation_matrix * self)
     }

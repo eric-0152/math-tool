@@ -1,3 +1,4 @@
+use num_complex::Complex64;
 use crate::{matrix::Matrix};
 
 pub fn normalize(data: &Matrix) -> Matrix {
@@ -6,18 +7,18 @@ pub fn normalize(data: &Matrix) -> Matrix {
     }
 
     let mut result_matrix: Matrix = Matrix::zeros(data.shape.0, data.shape.1);
-    let mut min: f64 = data.real[0][0]; 
-    let mut max: f64 = data.real[0][0]; 
+    let mut min: f64 = data.entries[0][0].re; 
+    let mut max: f64 = data.entries[0][0].re; 
     for r in 0..data.shape.0 {
         for c in 0..data.shape.1 {
-            if data.real[r][c] > max {max = data.real[r][c]}
-            else if data.real[r][c] < min {min = data.real[r][c]}
+            if data.entries[r][c].re > max {max = data.entries[r][c].re}
+            else if data.entries[r][c].re < min {min = data.entries[r][c].re}
         }
     }
     
     for r in 0..data.shape.0 {
         for c in 0..data.shape.1 {
-            result_matrix.real[r][c] = (data.real[r][c] - max) / (max - min);
+            result_matrix.entries[r][c] = (data.entries[r][c] - max) / (max - min);
         }
     }
 
@@ -32,11 +33,11 @@ pub fn principle_component_analysis(matrix: &Matrix, dimension: usize) -> Result
     
     let mut row_mean: Matrix = Matrix::zeros(matrix.shape.0, 1);
     for r in 0..matrix.shape.0 {
-        let mut sum: f64 = 0.0;
+        let mut sum: Complex64 = Complex64::ZERO;
         for c in 0..matrix.shape.1 {
-            sum += matrix.real[r][c];
+            sum += matrix.entries[r][c];
         }
-        row_mean.real[r][0] = sum / matrix.shape.1 as f64;
+        row_mean.entries[r][0] = sum / matrix.shape.1 as f64;
     }
     let mean_matrix: Matrix = &row_mean * &Matrix::ones(1, matrix.shape.1);
     let residual_matrix: Matrix = matrix - &mean_matrix;

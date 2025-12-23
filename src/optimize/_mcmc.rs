@@ -43,7 +43,7 @@ impl GuassianStep {
         let mut new_param: Matrix = last_param.clone();
 
         for p in 0..new_param.shape.0 {
-            new_param.real[p][0] += self.sample();
+            new_param.entries[p][0] += self.sample();
         }
 
         let mut new_fx: f64 = (self.function)(&new_param);
