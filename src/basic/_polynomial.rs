@@ -232,7 +232,14 @@ fn newton_raphson(poly: &Polynomial) -> Result<Complex64, String> {
         return Err("Failed to converge".to_string());
     }
 
-    param.round(5).display();
+    // It sometimes has value in imaginary part, and I found that the authentic root
+    // should add the imaginary part to the real part.
+    // 
+    // To find the complex root, the Newton-Raphson method will evaluate f(a + bi) instead
+    // of f(x), and if we only consider a and b are just real numbers, it sometimes won't
+    // converge. But if we consider them as complex number, the imaginary part of them may
+    // contain some value, and if we add them up: x = (a.re + b.im) + (b.re + a.im)j, then
+    // we will get right result. I don't know why this works, but it works.
     if param.round(5).entries[0].im.abs() > THRESHOLD || param.round(5).entries[1].im.abs() > THRESHOLD {
         println!("1");
         Ok(Complex64::new(param.entries[0].re + param.entries[1].im, param.entries[1].re + param.entries[0].im))
@@ -254,6 +261,9 @@ pub fn find_root(poly: &Polynomial) -> Vector {
             continue;
         }
         
+        // In Newton Raphson method, we only check whether the previous parameter is 
+        // close enough to the current parameter, so it may returns wrong root. 
+        // Evaluate the norm from the original point here to examine whether the root is true.
         let mut new_root = find_result.unwrap();
         if poly.evaluate(&new_root).norm() > 1e-2 {
             continue;
