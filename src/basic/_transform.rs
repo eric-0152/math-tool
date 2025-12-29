@@ -1,4 +1,5 @@
 use crate::matrix::Matrix;
+use crate::vector::Vector;
 
 impl Matrix {
     /// ### Givens Rotation :
@@ -17,5 +18,9 @@ impl Matrix {
         rotation_matrix.entries[i][j].re = -angle.sin();
 
         Ok(&rotation_matrix * self)
+    }
+    
+    pub fn houserholder(vector: Vector) -> Matrix {
+        &Matrix::identity(vector.size) - &(2.0 * &(&vector.as_matrix() * &vector.transpose()))
     }
 }

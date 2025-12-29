@@ -75,7 +75,7 @@ pub fn gauss_jordan_elimination(
     }
 
     // Reduce to upper triangular form.
-    const THERESHOLD: f64 = 1e-8;
+    const THERESHOLD: f64 = 1e-4;
     let mut result_matrix: Matrix = matrix.clone();
     let mut result_vector: Vector = b.clone();
     let mut permutation: Matrix = Matrix::identity(matrix.shape.0);
@@ -115,7 +115,7 @@ pub fn gauss_jordan_elimination(
         pivot_col += 1;
         last_operate = 1;
     }
-    
+
     // Reduce to diagonal form
     if last_operate == 0 {
         pivot_col -= 1;
@@ -142,17 +142,12 @@ pub fn gauss_jordan_elimination(
 
     // Pivots -> 1
     for r in 0..result_matrix.shape.0 {
+        let scale: Complex64 = result_matrix.entries[r][r];
+        if scale.norm() < THERESHOLD {continue}
         for c in r..result_matrix.shape.1 {
-            if result_matrix.entries[r][c] != Complex64::ZERO {
-                let scale: Complex64 = result_matrix.entries[r][c];
-                for e in c..result_matrix.shape.1 {
-                    result_matrix.entries[r][e] /= scale;
-                }
-                result_vector.entries[r] /= scale;
-
-                break;
-            }
+            result_matrix.entries[r][c] /= scale;
         }
+        result_vector.entries[r] /= scale;
     }
 
     Ok((result_matrix, result_vector, permutation))
@@ -239,5 +234,6 @@ pub fn null_space(matrix: &Matrix) -> Matrix {
             .append_vector(&Vector::zeros(rref.shape.1), 1)
             .unwrap();
     }
+    
     null_basis
 }

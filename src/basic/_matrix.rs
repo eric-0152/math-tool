@@ -103,9 +103,9 @@ impl Matrix {
         if show_im {
             for e in 0..row.len() {
                 if row[e].im >= 0.0 {
-                    string.push_str(format!("{:>11?} {:>11} j", row[e].re, format!("+ {:<?}", row[e].im.abs())).as_str());
+                    string.push_str(format!("{:>11?} {:>11}j", row[e].re, format!("+ {:<?}", row[e].im.abs())).as_str());
                 } else {
-                    string.push_str(format!("{:>11?} {:>11} j", row[e].re, format!("- {:<?}", row[e].im.abs())).as_str());
+                    string.push_str(format!("{:>11?} {:>11}j", row[e].re, format!("- {:<?}", row[e].im.abs())).as_str());
                 }
                 
                 if e != row.len() - 1 {
@@ -173,9 +173,9 @@ impl Matrix {
         }
         
 
-        println!("[{}", Self::fmt_line(&self.entries[0], show_im));
+        println!("[{},", Self::fmt_line(&self.entries[0], show_im));
         for r in 1..(self.shape.0 - 1) {
-            println!(" {}", Self::fmt_line(&self.entries[r], show_im));
+            println!(" {},", Self::fmt_line(&self.entries[r], show_im));
         }
         println!(
             "{}",
@@ -839,9 +839,13 @@ impl Matrix {
     }
 
     /// Return a matrix only remain the diagonal entries.
-    pub fn take_diagonal(self: &Self) -> Matrix {
-        self.eliminate_lower_triangular()
-            .eliminate_upper_triangular()
+    pub fn take_diagonal(self: &Self) -> Vector {
+        let mut diagonal: Vec<Complex64> = Vec::new();
+        for d in 0..self.shape.0.min(self.shape.1) {
+            diagonal.push(self.entries[d][d]);
+        }
+        
+        Vector::new(&diagonal)
     }
 }
 

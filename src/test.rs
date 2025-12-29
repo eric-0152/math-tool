@@ -1,10 +1,12 @@
-#[path ="./test/_eigen/test.rs"]
+#[path ="./test/_eigen.rs"]
 mod _eigen;
-#[path ="./test/_solve/test.rs"]
+#[path ="./test/_solve.rs"]
 mod _solve;
-#[path ="./test/_matrix/test.rs"]
+#[path ="./test/_matrix.rs"]
 mod _matrix;
-#[path ="./test/_regression/test.rs"]
+#[path ="./test/_regression.rs"]
 mod _regression;
-#[path ="./test/_polynomial/test.rs"]
+#[path ="./test/_polynomial.rs"]
 mod _polynomial;
+#[path ="./test/_decomposition.rs"]
+mod _decomposition;

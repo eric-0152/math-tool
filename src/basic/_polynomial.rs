@@ -1,6 +1,5 @@
 use num_complex::Complex64;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
-use crate::multipoly::MultiPoly;
 use crate::vector::Vector;
 
 /// Coefficient of the poly is start from constant
@@ -46,9 +45,9 @@ impl Polynomial {
             for e in 0..self.coeff.len() {
                 if self.coeff[e].re != 0.0 || self.coeff[e].im != 0.0 {
                     if self.coeff[e].im >= 0.0 {
-                        print!("{}", format!("({:>8?} {:>8} j)", self.coeff[e].re, format!("+ {:<?}", self.coeff[e].im.abs())));
+                        print!("{}", format!("({:>8?} {:>8}j)", self.coeff[e].re, format!("+ {:<?}", self.coeff[e].im.abs())));
                     } else {
-                        print!("{}", format!("({:>8?} {:>8} j)", self.coeff[e].re, format!("- {:<?}", self.coeff[e].im.abs())));
+                        print!("{}", format!("({:>8?} {:>8}j)", self.coeff[e].re, format!("- {:<?}", self.coeff[e].im.abs())));
                     }
                     if e != 0 {
                         print!("x^{}", e);
@@ -171,80 +170,35 @@ impl Polynomial {
 
 #[inline]
 fn newton_raphson(poly: &Polynomial) -> Result<Complex64, String> {
+    
     // Build complex form of poly.
-    let x_y: MultiPoly = MultiPoly::new(vec!["x".to_string(), "y".to_string()], vec![(Complex64::ONE, vec![1.0, 0.0]), (Complex64::new(0.0, 1.0), vec![0.0, 1.0])]).unwrap();
-    let mut complex_poly: MultiPoly = MultiPoly::new(vec!["x".to_string(), "y".to_string()], vec![(poly.coeff[0], vec![0.0, 0.0])]).unwrap();
-    let mut current_x_y: MultiPoly = x_y.clone();
-    for e in 1..poly.coeff.len() {
-        complex_poly = &complex_poly + &(poly.coeff[e] * &current_x_y);
-        current_x_y = &current_x_y * &x_y;
-    }
-
-    // Separate to real and imginary parts.
-    let mut real_poly: MultiPoly = MultiPoly::new(vec!["x".to_string(), "y".to_string()], vec![]).unwrap();
-    let mut img_poly: MultiPoly = MultiPoly::new(vec!["x".to_string(), "y".to_string()], vec![]).unwrap();
-    for coeff in complex_poly.coeff {
-        if coeff.0.re != 0.0 {
-            real_poly.coeff.push(coeff);
-        } else {
-            img_poly.coeff.push(coeff);
-        }
-    }
+    let derivative = poly.derivative();
 
     // Newton-Raphson method
-    img_poly = &img_poly * Complex64::new(0.0, -1.0);
-    let real_partial_x: MultiPoly = real_poly.partial_derivative("x".to_string()).unwrap();
-    let real_partial_y: MultiPoly = real_poly.partial_derivative("y".to_string()).unwrap();
-    let img_partial_x: MultiPoly = img_poly.partial_derivative("x".to_string()).unwrap();
-    let img_partial_y: MultiPoly = img_poly.partial_derivative("y".to_string()).unwrap();
-    let mut param = Vector::random_vector(2, -1000.0, 1000.0, false);
-    const THRESHOLD: f64 = 1e-16;
-    const MAX_ITER: u32 = 10000;
-    let mut learning_rate = 1.0;
-    let d_lr = (learning_rate - 0.1) / MAX_ITER as f64;
+    let mut param: Complex64 = Vector::random_vector(1, -100.0, 100.0, true).entries[0];
+    if param.im == 0.0 {param.im = 1.0}
+    const THRESHOLD: f64 = 1e-10;
+    const MAX_ITER: u32 = 2000;
     let mut error: f64 = 1.0;
     let mut last_error: f64 = 0.0;
     let mut iter: u32 = 0;
     let mut old_param = param.clone();
     while (error -last_error).abs() > THRESHOLD && iter < MAX_ITER {
-        let real: Complex64 = real_poly.evaluate(&param)?;
-        let img: Complex64 = img_poly.evaluate(&param)?;
-        let real_dx: Complex64 = real_partial_x.evaluate(&param)?;
-        let real_dy: Complex64 = real_partial_y.evaluate(&param)?;
-        let img_dx: Complex64 = img_partial_x.evaluate(&param)?;
-        let img_dy: Complex64 = img_partial_y.evaluate(&param)?;
-        let denominator: Complex64 = (real_dx * img_dy) - (real_dy * real_dx);
-        let dx: Complex64 = ((real * img_dy) - (real_dy * img)) / denominator;  
-        let dy: Complex64 = ((real_dx * img) - (real * img_dx)) / denominator;
-        param.entries[0] -= learning_rate * dx;
-        param.entries[1] -= learning_rate * dy;
-        learning_rate -= d_lr;
+        param -= poly.evaluate(&param) / derivative.evaluate(&param);
         last_error = error;
         error = (&param - &old_param).norm();
-        old_param = param.clone();
+        old_param = param;
         if error.is_nan() || error.is_infinite() {
             return Err("Failed to converge".to_string());
         }
+        
         iter += 1;
     }
-
     if (error - last_error).abs() > THRESHOLD {
         return Err("Failed to converge".to_string());
     }
 
-    // It sometimes has value in imaginary part, and I found that the authentic root
-    // should add the imaginary part to the real part.
-    // 
-    // To find the complex root, the Newton-Raphson method will evaluate f(a + bi) instead
-    // of f(x), and if we only consider a and b are just real numbers, it sometimes won't
-    // converge. But if we consider them as complex number, the imaginary part of them may
-    // contain some value, and if we add them up: x = (a.re + b.im) + (b.re + a.im)j, then
-    // we will get right result. I don't know why this works, but it works.
-    if param.round(5).entries[0].im.abs() > THRESHOLD || param.round(5).entries[1].im.abs() > THRESHOLD {
-        Ok(Complex64::new(param.entries[0].re + param.entries[1].im, param.entries[1].re + param.entries[0].im))
-    } else {
-        Ok(Complex64::new(param.entries[0].re, param.entries[1].re))
-    }
+    Ok(param)
 }
 
 /// Return a complex root using Newton-Raphson method.
@@ -252,29 +206,18 @@ pub fn find_root(poly: &Polynomial) -> Vector {
     let mut roots = Vector::new(&vec![]);
     let mut current_poly = poly.clone();
     let mut last_residual = Complex64::ZERO;
-
     while current_poly.coeff.len() > 1 {
-        let find_result = newton_raphson(&current_poly);
-        if find_result.is_err() {
-            continue;
+        match newton_raphson(&current_poly) {
+            Err(_) => continue,
+            Ok(new_root) => {
+                roots = roots.append(&Vector { size: 1, entries: vec![new_root] });
+                let (quotient, remainder) = current_poly.divide_by(&Polynomial::new(&vec![-new_root, Complex64::ONE]));
+                current_poly = quotient;
+                last_residual = remainder.coeff[0];
+            }
         }
-        
-        // In Newton Raphson method, we only check whether the previous parameter is 
-        // close enough to the current parameter, so it may returns wrong root. 
-        // Evaluate the norm from the original point here to examine whether the root is true.
-        let mut new_root = find_result.unwrap();
-        if poly.evaluate(&new_root).norm() > 1e-2 {
-            continue;
-        }
-
-        roots = roots.append(&Vector { size: 1, entries: vec![new_root] });
-        new_root.re = (new_root.re * 10.0_f64.powi(10)).round() / 10.0_f64.powi(10);
-        new_root.im = (new_root.im * 10.0_f64.powi(10)).round() / 10.0_f64.powi(10);
-        let (quotient, remainder) = current_poly.divide_by(&Polynomial::new(&vec![-new_root, Complex64::ONE]));
-        current_poly = quotient;
-        last_residual = remainder.coeff[0];
     }
-    
+
     roots.entries[roots.size - 1] -= last_residual;
     roots.entries.sort_by(|a, b| a.re.partial_cmp(&b.re).unwrap());
     roots.entries.reverse();

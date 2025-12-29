@@ -18,7 +18,7 @@ pub fn rayleigh_quotient(eigenvector: &Vector, matrix_a: &Matrix) -> Complex64 {
 /// ### Algorithm :
 /// &emsp; ***A = QR*** => ***RQ = S*** => ***S = Q^(-1)QRQ*** => ***S = Q^(-1)AQ***
 #[inline]
-pub fn similar_matrix(matrix: &Matrix) -> Result<Matrix, String> {
+pub fn qr_similar_matrix(matrix: &Matrix) -> Result<Matrix, String> {
     if matrix.shape.0 != matrix.shape.1 {
         return Err("Input Error: The matrix is not square.".to_string());
     }
@@ -32,7 +32,7 @@ pub fn similar_matrix(matrix: &Matrix) -> Result<Matrix, String> {
 }
 
 #[inline]
-fn no_check_similar_matrix(matrix: &Matrix) -> Matrix {
+fn no_check_qr_similar_matrix(matrix: &Matrix) -> Matrix {
     let tuple = matrix.qr().unwrap();
 
     &tuple.1 * &tuple.0
@@ -43,20 +43,19 @@ pub fn shift_qr_algorithm(
     max_iter: u32,
     error_thershold: f64,
 ) -> Result<(Matrix, f64), String> {
-    match similar_matrix(matrix) {
+    match qr_similar_matrix(matrix) {
         Ok(mut matrix_similar) => {
-            let last_row_idx: usize = matrix_similar.shape.0 - 1;
-            let last_col_idx: usize = matrix_similar.shape.1 - 1;
+            let last_idx: usize = matrix_similar.shape.0 - 1;
             let matrix_size: usize = matrix_similar.shape.0;
-            let mut last_eigenvalue: Complex64 = matrix_similar.entries[last_row_idx][last_col_idx];
+            let mut last_eigenvalue: Complex64 = matrix_similar.entries[last_idx][last_idx];
             let mut error: f64 = 1.0;
             let mut step: u32 = 0;
             while error > error_thershold && step < max_iter {
                 let shift: Matrix = &Matrix::identity(matrix_size) * last_eigenvalue;
                 matrix_similar = &matrix_similar - &shift;
-                matrix_similar = &no_check_similar_matrix(&matrix_similar) + &shift;
-                error = (matrix_similar.entries[last_row_idx][last_col_idx] - last_eigenvalue).norm();
-                last_eigenvalue = matrix_similar.entries[last_row_idx][last_col_idx];
+                matrix_similar = &no_check_qr_similar_matrix(&matrix_similar) + &shift;
+                error = (matrix_similar.entries[last_idx][last_idx] - last_eigenvalue).norm();
+                last_eigenvalue = matrix_similar.entries[last_idx][last_idx];
                 step += 1;
             }
             Ok((matrix_similar, error))
@@ -65,6 +64,7 @@ pub fn shift_qr_algorithm(
         Err(error_msg) => Err(error_msg),
     }
 }
+
 
 #[inline]
 fn sub_determinant(poly_matrix: &Vec<Vec<Polynomial>>) -> Polynomial {
@@ -96,29 +96,33 @@ fn sub_determinant(poly_matrix: &Vec<Vec<Polynomial>>) -> Polynomial {
 }
 
 /// Return a vector contains polynomial coefficients(from constant to highest degree).
-pub fn lambda_polynomial(matrix: &Matrix) -> Polynomial {
-    if matrix.shape.0 == 1 {
-        return Polynomial { degree: 0, coeff: (vec![matrix.entries[0][0]]) };
-    } 
-    
-    
-    let mut poly_matrix: Vec<Vec<Polynomial>> = Vec::new();
-    for r in 0..matrix.shape.0 {
-        let mut poly_row: Vec<Polynomial> = Vec::new();        
-        for c in 0..matrix.shape.0 {
-            if r == c {
-                poly_row.push(Polynomial { degree: 1, coeff: (vec![-matrix.entries[r][c], Complex64::ONE])});
-            } else {
-                poly_row.push(Polynomial { degree: 0, coeff: (vec![-matrix.entries[r][c]])});
-            }
-        }
-        poly_matrix.push(poly_row);
+/// 
+/// Using Faddeev-LeVerrier algorithm.
+pub fn characteristic_polynomial(matrix: &Matrix) -> Result<Polynomial, String> {
+    if matrix.shape.0 != matrix.shape.1 {
+        return Err("Input Error: This matrix is not square.".to_string());
     }
 
-    sub_determinant(&poly_matrix).remove_redundant()
+    let mut m = Matrix::identity(matrix.shape.0);
+    let mut c = Complex64::ONE;
+    let mut coefficient = vec![c];
+    for i in 0..matrix.shape.0 {
+        let am = matrix * &m;
+        c = -am.trace() / (i as f64 + 1.0);
+        coefficient.push(c);
+        m = am;
+        for d in 0..m.shape.0 {
+            m.entries[d][d] += c;
+        }
+    }
+
+    coefficient.reverse();
+    Ok(Polynomial::new(&coefficient))
 }
 
 /// Return a vector which contains eigenvalue of matrix and the difference.
+/// 
+/// Use the qr algorithm first to eliminate the lower triangular part of the matrix.
 pub fn eigenvalue(
     matrix: &Matrix
 ) -> Result<Vector, String> {
@@ -126,8 +130,8 @@ pub fn eigenvalue(
         return Err("Input Error: This matrix is not square.".to_string());
     }
     
-    let lambda_function = lambda_polynomial(&matrix);
-    let eigenvalues = find_root(&lambda_function);
+    let lambda_function = characteristic_polynomial(matrix)?;
+    let eigenvalues = find_root(&lambda_function);        
     Ok(eigenvalues)
 }
 
@@ -138,7 +142,7 @@ pub fn eigenvector(
     if matrix.shape.0 != matrix.shape.1 {
         return Err("Input Error: The input matrix is not square.".to_string());
     }
-
+    
     let eigen_kernel: Matrix = &(&Matrix::identity(matrix.shape.0) * eigen_value) - matrix;
     Ok(solve::null_space(&eigen_kernel))
 }

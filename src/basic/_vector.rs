@@ -73,9 +73,9 @@ impl Vector {
         if show_im {
             for e in 0..self.size {
                 if self.entries[e].im >= 0.0 {
-                    print!("{}", format!("{:>11?} {:>11} j", self.entries[e].re, format!("+ {:<?}", self.entries[e].im.abs())));
+                    print!("{}", format!("{:>11?} {:>11}j", self.entries[e].re, format!("+ {:<?}", self.entries[e].im.abs())));
                 } else {
-                    print!("{}", format!("{:>11?} {:>11} j", self.entries[e].re, format!("- {:<?}", self.entries[e].im.abs())));
+                    print!("{}", format!("{:>11?} {:>11}j", self.entries[e].re, format!("- {:<?}", self.entries[e].im.abs())));
                 }
                 
                 if e != (self.size - 1) {
@@ -239,6 +239,7 @@ impl Vector {
 
         let mut result_vector: Vector = self.clone();
         result_vector.entries.remove(i);
+        result_vector.size -= 1;
 
         Ok(result_vector)
     }
