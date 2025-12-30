@@ -1,23 +1,23 @@
-#[path = "basic/_matrix.rs"]
-pub mod matrix;
-#[path = "basic/_vector.rs"]
-pub mod vector;
-#[path = "basic/_polynomial.rs"]
-pub mod polynomial;
-#[path = "basic/_multipoly.rs"]
-pub mod multipoly;
-#[path = "basic/_io.rs"]
-pub mod io;
 #[path = "basic/_decomposition.rs"]
 pub mod decomposition;
-#[path = "basic/_transform.rs"]
-pub mod transform;
+#[path = "basic/_eigen.rs"]
+pub mod eigen;
+#[path = "basic/_io.rs"]
+pub mod io;
+#[path = "basic/_matrix.rs"]
+pub mod matrix;
+#[path = "basic/_multipoly.rs"]
+pub mod multipoly;
+#[path = "basic/_polynomial.rs"]
+pub mod polynomial;
 #[path = "basic/_process.rs"]
 pub mod process;
 #[path = "basic/_solve.rs"]
 pub mod solve;
-#[path = "basic/_eigen.rs"]
-pub mod eigen;
+#[path = "basic/_transform.rs"]
+pub mod transform;
+#[path = "basic/_vector.rs"]
+pub mod vector;
 
 #[path = "optimize/_mcmc.rs"]
 pub mod mcmc;
@@ -26,11 +26,10 @@ pub mod preprocessing;
 #[path = "optimize/_regression.rs"]
 pub mod regression;
 
-
 #[macro_export]
 macro_rules! to_matrix {
     (
-        $([$( $e:expr),*]), * 
+        $([$( $e:expr),*]), *
     ) => {{
         let mut rows = Vec::new();
         $(
@@ -48,7 +47,7 @@ macro_rules! to_matrix {
 #[macro_export]
 macro_rules! to_polynomial {
     (
-        [$( $e:expr),*] 
+        [$( $e:expr),*]
     ) => {{
         let mut elements = Vec::new();
         $(
@@ -62,7 +61,7 @@ macro_rules! to_polynomial {
 #[macro_export]
 macro_rules! to_vector {
     (
-        [$( $e:expr),*] 
+        [$( $e:expr),*]
     ) => {{
         let mut elements = Vec::new();
         $(
@@ -72,4 +71,3 @@ macro_rules! to_vector {
         vector::Vector::new(&elements)
     }};
 }
-

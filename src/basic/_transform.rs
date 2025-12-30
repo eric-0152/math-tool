@@ -4,7 +4,7 @@ use crate::vector::Vector;
 impl Matrix {
     /// ### Givens Rotation :
     /// &emsp; Rotate the matrix along the i-j plane, by counter-clockwise angle.
-    /// 
+    ///
     /// ### Return the matrix after rotation.
     pub fn givens_rotation(self: &Self, i: usize, j: usize, angle: f64) -> Result<Matrix, String> {
         if i >= self.shape.0 || j >= self.shape.0 {
@@ -19,7 +19,7 @@ impl Matrix {
 
         Ok(&rotation_matrix * self)
     }
-    
+
     pub fn houserholder(vector: Vector) -> Matrix {
         &Matrix::identity(vector.size) - &(2.0 * &(&vector.as_matrix() * &vector.transpose()))
     }

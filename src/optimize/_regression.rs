@@ -3,7 +3,7 @@ use crate::vector::Vector;
 
 /// ### Formula :
 /// &emsp; ***x = (A^T @ A)^-1 @ A^T @ y***
-/// 
+///
 /// Given a matrix ***A*** and a vecor of answer ***y***, return a vector ***x*** which |***Ax - y***| is minimized.
 pub fn least_squared_approximation(kernel: &Matrix, y: &Vector) -> Result<Vector, String> {
     if kernel.shape.0 != y.size {
@@ -24,10 +24,10 @@ pub fn least_squared_approximation(kernel: &Matrix, y: &Vector) -> Result<Vector
 
 /// ### Formula :
 /// &emsp; ***c0 + c1 x + ... + cn x^n = y***.
-/// 
+///
 /// ### Return a tuple (***K, y***) :
 /// &emsp; ***K*** : The kernel matrix which can be applied to **least_squared_approximation()**.
-/// 
+///
 /// &emsp; ***y*** : The answer vector.
 pub fn polynomial_kernel(
     x: &Vector,
@@ -52,7 +52,7 @@ pub fn polynomial_kernel(
 
 /// ### Formula :
 /// &emsp; ***c0 + c1 x + ... + cn x^n = y***.
-/// 
+///
 /// ### Return a vector which contains the coefficients(c0, c1, c2, ..., cn).
 pub fn polynomial_regression(x: &Vector, y: &Vector, degree: usize) -> Result<Vector, String> {
     match polynomial_kernel(x, y, degree) {
@@ -64,15 +64,14 @@ pub fn polynomial_regression(x: &Vector, y: &Vector, degree: usize) -> Result<Ve
     }
 }
 
-
 /// ### Formula :
 /// &emsp; ***a e^(c x) = y***.
-/// 
+///
 /// ### Return a tuple (***K, y***) :
 /// &emsp; ***K*** : The kernel matrix which can be applied to **least_squared_approximation()**.
-/// 
+///
 /// &emsp; ***y*** : The modified answer vector.
-/// 
+///
 /// ### Notice :
 /// &emsp; The output of least_squared_approximation() will be [[***ln(a), c***]].
 pub fn exponential_kernel(x: &Vector, y: &Vector) -> Result<(Matrix, Vector), String> {
@@ -93,7 +92,7 @@ pub fn exponential_kernel(x: &Vector, y: &Vector) -> Result<(Matrix, Vector), St
 
 /// ### Formula :
 /// &emsp; ***a e^(c x) = y***.
-/// 
+///
 /// ### Return a vector which contains the coefficients(a, c).
 pub fn exponential_regression(x: &Vector, y: &Vector) -> Result<Vector, String> {
     match exponential_kernel(x, y) {
@@ -102,21 +101,21 @@ pub fn exponential_regression(x: &Vector, y: &Vector) -> Result<Vector, String> 
             Err(error_msg) => Err(error_msg),
             Ok(mut coefficients) => {
                 coefficients.entries[0] = coefficients.entries[0].exp();
-                
-                Ok(coefficients)},
+
+                Ok(coefficients)
+            }
         },
     }
 }
 
-
 /// ### Formula :
 /// &emsp; ***a e^((-1 / 2) * ((x - μ) / c)^2) = y***.
-/// 
+///
 /// ### Return a tuple (***K, y***) :
 /// &emsp; ***K*** : The kernel matrix which can be applied to **least_squared_approximation()**.
-/// 
+///
 /// &emsp; ***y*** : The modified answer vector.
-/// 
+///
 /// ### Notice :
 /// &emsp; The output of least_squared_approximation() will be [[***ln(a), 1 / c^2***]].
 pub fn gaussian_1d_kernel(x: &Vector, y: &Vector) -> Result<(Matrix, Vector), String> {
@@ -141,7 +140,7 @@ pub fn gaussian_1d_kernel(x: &Vector, y: &Vector) -> Result<(Matrix, Vector), St
 
 /// ### Formula :
 /// &emsp; ***a e^((-1 / 2) * ((x - μ) / c)^2) = y***.
-/// 
+///
 /// ### Return a matrix which contains the coefficients(a, \c).
 pub fn gaussian_1d_regression(x: &Vector, y: &Vector) -> Result<Vector, String> {
     match gaussian_1d_kernel(x, y) {
@@ -151,14 +150,12 @@ pub fn gaussian_1d_regression(x: &Vector, y: &Vector) -> Result<Vector, String> 
             Ok(mut coefficients) => {
                 coefficients.entries[0] = (coefficients.entries[0]).exp();
                 coefficients.entries[1] = (1.0 / coefficients.entries[1]).sqrt();
-                
-                Ok(coefficients)                
+
+                Ok(coefficients)
             }
         },
     }
 }
-
-
 
 /// ### Formula :
 /// &emsp; ***c0 + c1 x + ... + cn x^n = y***.
@@ -182,7 +179,7 @@ pub fn exponential_data(x: &Vector, coefficient: &Vector) -> Vector {
     for e in 0..x.size {
         fx.entries[e] = fx.entries[e].exp();
     }
-    
+
     coefficient.entries[0] * &fx
 }
 
@@ -194,6 +191,6 @@ pub fn gaussian_1d_data(x: &Vector, coefficient: &Vector) -> Vector {
     for e in 0..x.size {
         fx.entries[e] = coefficient.entries[0] * (-0.5 * fx.entries[e].powi(2)).exp();
     }
-    
+
     fx
 }

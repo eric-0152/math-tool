@@ -17,7 +17,8 @@ pub fn upper_triangular(matrix: &Matrix, b: &Vector) -> Result<Vector, String> {
         vector_x.entries[diag] = b.entries[diag] / matrix.entries[diag][diag];
         for prev in ((diag + 1)..min_range).rev() {
             let element: Complex64 = vector_x.entries[prev];
-            vector_x.entries[diag] -= matrix.entries[diag][prev] * element / matrix.entries[diag][diag];
+            vector_x.entries[diag] -=
+                matrix.entries[diag][prev] * element / matrix.entries[diag][diag];
         }
     }
 
@@ -46,7 +47,8 @@ pub fn lower_triangular(matrix: &Matrix, b: &Vector) -> Result<Vector, String> {
         vector_x.entries[diag] = b.entries[diag] / matrix.entries[diag][diag];
         for prev in 0..diag {
             let element: Complex64 = vector_x.entries[prev];
-            vector_x.entries[diag] -= matrix.entries[diag][prev] * element / matrix.entries[diag][diag];
+            vector_x.entries[diag] -=
+                matrix.entries[diag][prev] * element / matrix.entries[diag][diag];
         }
     }
 
@@ -62,9 +64,9 @@ pub fn lower_triangular(matrix: &Matrix, b: &Vector) -> Result<Vector, String> {
 
 /// ### Return a tuple (***A, b, P) :
 /// &emsp; A : The matrix after Guass Jordan elimination.
-/// 
+///
 /// &emsp; b : The vector after Guass Jordan elimination.
-/// 
+///
 /// &emsp; P : The permutation matrix.
 pub fn gauss_jordan_elimination(
     matrix: &Matrix,
@@ -103,7 +105,8 @@ pub fn gauss_jordan_elimination(
         }
 
         for r in (pivot_row + 1)..result_matrix.shape.0 {
-            let scale: Complex64 = result_matrix.entries[r][pivot_col] / result_matrix.entries[pivot_row][pivot_col];
+            let scale: Complex64 =
+                result_matrix.entries[r][pivot_col] / result_matrix.entries[pivot_row][pivot_col];
             let element: Complex64 = result_vector.entries[pivot_row];
             result_vector.entries[r] -= scale * element;
             for e in 0..matrix.shape.1 {
@@ -128,7 +131,8 @@ pub fn gauss_jordan_elimination(
             if result_matrix.entries[pivot_row][pivot_col].norm() < THERESHOLD {
                 continue;
             }
-            let scale: Complex64 = result_matrix.entries[r][pivot_col] / result_matrix.entries[pivot_row][pivot_col];
+            let scale: Complex64 =
+                result_matrix.entries[r][pivot_col] / result_matrix.entries[pivot_row][pivot_col];
             let element: Complex64 = result_vector.entries[pivot_row];
             result_vector.entries[r] -= scale * element;
             for e in pivot_col..result_matrix.shape.1 {
@@ -143,7 +147,9 @@ pub fn gauss_jordan_elimination(
     // Pivots -> 1
     for r in 0..result_matrix.shape.0 {
         let scale: Complex64 = result_matrix.entries[r][r];
-        if scale.norm() < THERESHOLD {continue}
+        if scale.norm() < THERESHOLD {
+            continue;
+        }
         for c in r..result_matrix.shape.1 {
             result_matrix.entries[r][c] /= scale;
         }
@@ -206,7 +212,7 @@ pub fn null_space(matrix: &Matrix) -> Matrix {
                 element_num += 1;
             }
             if element_num == 2 {
-                null_basis = null_basis.append_vector(&null_vector, 1).unwrap();// Check Check Check
+                null_basis = null_basis.append_vector(&null_vector, 1).unwrap(); // Check Check Check
                 break;
             }
         }
@@ -234,6 +240,6 @@ pub fn null_space(matrix: &Matrix) -> Matrix {
             .append_vector(&Vector::zeros(rref.shape.1), 1)
             .unwrap();
     }
-    
+
     null_basis
 }

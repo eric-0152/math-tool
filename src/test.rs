@@ -1,12 +1,12 @@
-#[path ="./test/_eigen.rs"]
-mod _eigen;
-#[path ="./test/_solve.rs"]
-mod _solve;
-#[path ="./test/_matrix.rs"]
-mod _matrix;
-#[path ="./test/_regression.rs"]
-mod _regression;
-#[path ="./test/_polynomial.rs"]
-mod _polynomial;
-#[path ="./test/_decomposition.rs"]
+#[path = "./test/_decomposition.rs"]
 mod _decomposition;
+#[path = "./test/_eigen.rs"]
+mod _eigen;
+#[path = "./test/_matrix.rs"]
+mod _matrix;
+#[path = "./test/_polynomial.rs"]
+mod _polynomial;
+#[path = "./test/_regression.rs"]
+mod _regression;
+#[path = "./test/_solve.rs"]
+mod _solve;

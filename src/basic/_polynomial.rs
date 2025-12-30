@@ -1,6 +1,6 @@
+use crate::vector::Vector;
 use num_complex::Complex64;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
-use crate::vector::Vector;
 
 /// Coefficient of the poly is start from constant
 #[derive(Clone, Debug)]
@@ -9,10 +9,6 @@ pub struct Polynomial {
     pub coeff: Vec<Complex64>,
 }
 
-
-
-
-
 impl Polynomial {
     pub fn new(coefficients: &Vec<Complex64>) -> Polynomial {
         if coefficients.len() == 0 {
@@ -20,15 +16,25 @@ impl Polynomial {
         }
 
         let degree: usize = coefficients.len() - 1;
-        Polynomial { degree, coeff: coefficients.clone() }.remove_redundant()
+        Polynomial {
+            degree,
+            coeff: coefficients.clone(),
+        }
+        .remove_redundant()
     }
     /// Return a poly with m 0.
     pub fn zero() -> Polynomial {
-        Polynomial { degree: 0, coeff: vec![Complex64::ZERO] }
+        Polynomial {
+            degree: 0,
+            coeff: vec![Complex64::ZERO],
+        }
     }
     /// Return a poly with m 1.
     pub fn one() -> Polynomial {
-        Polynomial { degree: 0, coeff: vec![Complex64::ONE] }
+        Polynomial {
+            degree: 0,
+            coeff: vec![Complex64::ONE],
+        }
     }
 
     pub fn display(self: &Self) {
@@ -45,9 +51,23 @@ impl Polynomial {
             for e in 0..self.coeff.len() {
                 if self.coeff[e].re != 0.0 || self.coeff[e].im != 0.0 {
                     if self.coeff[e].im >= 0.0 {
-                        print!("{}", format!("({:>8?} {:>8}j)", self.coeff[e].re, format!("+ {:<?}", self.coeff[e].im.abs())));
+                        print!(
+                            "{}",
+                            format!(
+                                "({:>8?} {:>8}j)",
+                                self.coeff[e].re,
+                                format!("+ {:<?}", self.coeff[e].im.abs())
+                            )
+                        );
                     } else {
-                        print!("{}", format!("({:>8?} {:>8}j)", self.coeff[e].re, format!("- {:<?}", self.coeff[e].im.abs())));
+                        print!(
+                            "{}",
+                            format!(
+                                "({:>8?} {:>8}j)",
+                                self.coeff[e].re,
+                                format!("- {:<?}", self.coeff[e].im.abs())
+                            )
+                        );
                     }
                     if e != 0 {
                         print!("x^{}", e);
@@ -74,7 +94,10 @@ impl Polynomial {
     }
 
     #[inline]
-    pub fn to_same_size(polynomial1: &Polynomial, polynomial2: &Polynomial) -> (Polynomial, Polynomial) {
+    pub fn to_same_size(
+        polynomial1: &Polynomial,
+        polynomial2: &Polynomial,
+    ) -> (Polynomial, Polynomial) {
         let p1 = polynomial1.remove_redundant();
         let p2 = polynomial2.remove_redundant();
         if p1.coeff.len() < p2.coeff.len() {
@@ -83,14 +106,14 @@ impl Polynomial {
                 result_poly1.coeff.push(Complex64::ZERO);
             }
 
-            return (result_poly1, p2.clone())
+            return (result_poly1, p2.clone());
         } else if p1.coeff.len() > p2.coeff.len() {
             let mut result_poly2: Polynomial = p2.clone();
             while result_poly2.coeff.len() < p1.coeff.len() {
                 result_poly2.coeff.push(Complex64::ZERO);
             }
 
-            return (polynomial1.clone(), result_poly2)
+            return (polynomial1.clone(), result_poly2);
         }
 
         (p1, p2)
@@ -102,7 +125,7 @@ impl Polynomial {
             coeff.re = coeff.re.round();
             coeff.im = coeff.im.round();
         }
-        
+
         &result_poly / 10.0_f64.powi(digit as i32)
     }
     #[inline]
@@ -122,13 +145,19 @@ impl Polynomial {
     /// Return a tuple (quotient, remainder)
     pub fn divide_by(self: &Self, divider: &Polynomial) -> (Polynomial, Polynomial) {
         let divider = divider.remove_redundant();
-        let mut remainder: Polynomial = self.clone().remove_redundant();
+        let mut remainder: Polynomial = self.remove_redundant();
         let mut quotient: Polynomial = Polynomial::zero();
         let degree_one = Polynomial::new(&vec![Complex64::ZERO, Complex64::ONE]);
         let mut degree_diff: usize = remainder.degree - divider.degree;
+        println!(" ");
         loop {
+            if remainder.coeff.len() < divider.coeff.len() {
+                break;
+            }
+
             let coefficient = remainder.coeff[remainder.degree] / divider.coeff[divider.degree];
             for d in 0..(divider.degree + 1) {
+                remainder.coeff[d + degree_diff];
                 remainder.coeff[d + degree_diff] -= coefficient * divider.coeff[d];
             }
             remainder = remainder.remove_redundant();
@@ -141,10 +170,11 @@ impl Polynomial {
             }
         }
 
+        quotient.degree -= 1;
         (quotient, remainder)
     }
 
-    pub fn evaluate(self: &Self, value: &Complex64) -> Complex64 {        
+    pub fn evaluate(self: &Self, value: &Complex64) -> Complex64 {
         let mut result: Complex64 = Complex64::new(self.coeff[0].re, self.coeff[0].im);
         let mut power: i32 = 1;
         for d in 1..self.coeff.len() {
@@ -152,66 +182,123 @@ impl Polynomial {
             result += element;
             power += 1;
         }
-        
+
         result
     }
-    
+
     #[inline]
     pub fn derivative(self: &Self) -> Polynomial {
         let mut result_poly: Polynomial = self.clone();
         for e in 1..self.coeff.len() {
             result_poly.coeff[e] = e as f64 * self.coeff[e];
         }
-        result_poly.coeff.remove(0);
-        result_poly.degree -= 1;
+        if self.degree > 0 {
+            result_poly.coeff.remove(0);
+            result_poly.degree -= 1;
+        }
+
         result_poly
     }
 }
 
 #[inline]
 fn newton_raphson(poly: &Polynomial) -> Result<Complex64, String> {
-    
-    // Build complex form of poly.
     let derivative = poly.derivative();
-
-    // Newton-Raphson method
-    let mut param: Complex64 = Vector::random_vector(1, -100.0, 100.0, true).entries[0];
-    if param.im == 0.0 {param.im = 1.0}
-    const THRESHOLD: f64 = 1e-10;
-    const MAX_ITER: u32 = 2000;
+    let mut x: Complex64 = Vector::random_vector(1, -1000.0, 1000.0, true).entries[0];
+    if x.im == 0.0 {
+        x.im = 1.0
+    }
+    const THRESHOLD: f64 = 1e-16;
+    const MAX_ITER: u32 = 1000;
     let mut error: f64 = 1.0;
     let mut last_error: f64 = 0.0;
     let mut iter: u32 = 0;
-    let mut old_param = param.clone();
-    while (error -last_error).abs() > THRESHOLD && iter < MAX_ITER {
-        param -= poly.evaluate(&param) / derivative.evaluate(&param);
-        last_error = error;
-        error = (&param - &old_param).norm();
-        old_param = param;
-        if error.is_nan() || error.is_infinite() {
-            return Err("Failed to converge".to_string());
+    let mut old_x = x.clone();
+    while (error - last_error).abs() > THRESHOLD && iter < MAX_ITER {
+        let fx: Complex64 = poly.evaluate(&x);
+        let dfx: Complex64 = derivative.evaluate(&x);
+        x -= fx / dfx;
+        if x.is_nan() || x.is_infinite() {
+            if fx.re < 0.0 || dfx.re < 0.0 {
+                if fx.re < 0.0 && dfx.re < 0.0 {
+                    x = old_x + Complex64::new(10.0, 10.0);
+                } else {
+                    x = old_x - Complex64::new(10.0, 10.0);
+                }
+            } else {
+                x = old_x + Complex64::new(10.0, 10.0);
+            }
         }
-        
+
+        last_error = error;
+        error = (&x - &old_x).norm();
+        old_x = x;
         iter += 1;
     }
-    if (error - last_error).abs() > THRESHOLD {
-        return Err("Failed to converge".to_string());
+
+    if (error - last_error).abs() > 1e-8 {
+        return Err("Failed to converge in Newton-Raphson method".to_string());
     }
 
-    Ok(param)
+    Ok(x)
+}
+fn _replace_value(value: Complex64) -> Complex64 {
+    if value.is_nan() {
+        Complex64::new(0.0, 0.0)
+    } else if value.is_infinite() {
+        Complex64::new(1e32, 1e32)
+    } else {
+        value
+    }
+}
+
+#[inline]
+pub fn laguerre_method(poly: &Polynomial) -> Result<Complex64, String> {
+    let derivative: Polynomial = poly.derivative();
+    let second_derivative: Polynomial = derivative.derivative();
+    let mut x: Complex64 = Complex64::ZERO;
+    let deg: f64 = poly.degree as f64;
+    let deg_m: f64 = deg - 1.0;
+    const THRESHOLD: f64 = 1e-16;
+    const MAX_ITER: u32 = 100;
+    let mut iter: u32 = 0;
+    while poly.evaluate(&x).norm_sqr() > THRESHOLD && iter < MAX_ITER {
+        let fx: Complex64 = poly.evaluate(&x);
+        let dfx: Complex64 = derivative.evaluate(&x);
+        let ddfx: Complex64 = second_derivative.evaluate(&x);
+        let g: Complex64 = dfx / fx;
+        let h: Complex64 = g.powi(2) - (ddfx / fx);
+        let add: Complex64 = g + (deg_m * ((deg * h) - g.powi(2))).sqrt();
+        let sub: Complex64 = g - (deg_m * ((deg * h) - g.powi(2))).sqrt();
+        if add.norm_sqr() >= sub.norm_sqr() {
+            x -= deg / add;
+        } else {
+            x -= deg / sub;
+        }
+
+        iter += 1;
+    }
+
+    Ok(x)
 }
 
 /// Return a complex root using Newton-Raphson method.
-pub fn find_root(poly: &Polynomial) -> Vector {
+pub fn find_root(poly: &Polynomial) -> Result<Vector, String> {
     let mut roots = Vector::new(&vec![]);
     let mut current_poly = poly.clone();
     let mut last_residual = Complex64::ZERO;
     while current_poly.coeff.len() > 1 {
-        match newton_raphson(&current_poly) {
-            Err(_) => continue,
+        match laguerre_method(&current_poly) {
+            Err(error_msg) => {
+                return Err(error_msg);
+            }
             Ok(new_root) => {
-                roots = roots.append(&Vector { size: 1, entries: vec![new_root] });
-                let (quotient, remainder) = current_poly.divide_by(&Polynomial::new(&vec![-new_root, Complex64::ONE]));
+                roots = roots.append(&Vector {
+                    size: 1,
+                    entries: vec![new_root],
+                });
+                let (quotient, remainder) =
+                    current_poly.divide_by(&Polynomial::new(&vec![-new_root, Complex64::ONE]));
                 current_poly = quotient;
                 last_residual = remainder.coeff[0];
             }
@@ -219,18 +306,12 @@ pub fn find_root(poly: &Polynomial) -> Vector {
     }
 
     roots.entries[roots.size - 1] -= last_residual;
-    roots.entries.sort_by(|a, b| a.re.partial_cmp(&b.re).unwrap());
-    roots.entries.reverse();
     roots
+        .entries
+        .sort_by(|a, b| a.re.partial_cmp(&b.re).unwrap());
+    roots.entries.reverse();
+    Ok(roots)
 }
-
-
-
-
-
-
-
-
 
 impl Add<f64> for &Polynomial {
     type Output = Polynomial;
@@ -391,7 +472,6 @@ impl Mul<&Polynomial> for &Polynomial {
             }
         }
 
-
         let mut result_poly: Polynomial = Polynomial::new(&vec![Complex64::ZERO]);
         while result_poly.degree < p1.degree + p2.degree {
             result_poly.coeff.push(Complex64::ZERO);
@@ -434,7 +514,6 @@ impl Div<Complex64> for &Polynomial {
         self * (1.0 / complex)
     }
 }
-
 
 impl AddAssign for Polynomial {
     #[inline]

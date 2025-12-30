@@ -1,7 +1,7 @@
-use std::ops::{Add, Mul, Sub, Div, AddAssign, SubAssign, MulAssign, DivAssign, Neg};
-use rand::Rng;
-use num_complex::Complex64;
 use crate::vector::Vector;
+use num_complex::Complex64;
+use rand::Rng;
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 #[derive(Clone, Debug)]
 pub struct Matrix {
@@ -9,21 +9,18 @@ pub struct Matrix {
     pub entries: Vec<Vec<Complex64>>,
 }
 
-
-
-
 impl Matrix {
     pub fn new(double_vec: &Vec<Vec<Complex64>>) -> Result<Matrix, String> {
         if double_vec.is_empty() {
             return Err("Input Error: This matrix is empty.".to_string());
         }
-        
+
         for r in 1..double_vec.len() {
             if double_vec[r].len() != double_vec[r - 1].len() {
                 return Err("Input Error: The vector should be same size in each row.".to_string());
-            } 
+            }
         }
-        
+
         Ok(Matrix {
             shape: (double_vec.len(), double_vec[0].len()),
             entries: double_vec.clone(),
@@ -76,7 +73,7 @@ impl Matrix {
                     continue;
                 } else {
                     result_matrix.entries[r][c].im = 0.0;
-                } 
+                }
             }
         }
 
@@ -103,11 +100,25 @@ impl Matrix {
         if show_im {
             for e in 0..row.len() {
                 if row[e].im >= 0.0 {
-                    string.push_str(format!("{:>11?} {:>11}j", row[e].re, format!("+ {:<?}", row[e].im.abs())).as_str());
+                    string.push_str(
+                        format!(
+                            "{:>11?} {:>11}j",
+                            row[e].re,
+                            format!("+ {:<?}", row[e].im.abs())
+                        )
+                        .as_str(),
+                    );
                 } else {
-                    string.push_str(format!("{:>11?} {:>11}j", row[e].re, format!("- {:<?}", row[e].im.abs())).as_str());
+                    string.push_str(
+                        format!(
+                            "{:>11?} {:>11}j",
+                            row[e].re,
+                            format!("- {:<?}", row[e].im.abs())
+                        )
+                        .as_str(),
+                    );
                 }
-                
+
                 if e != row.len() - 1 {
                     string.push_str(",");
                 }
@@ -115,8 +126,10 @@ impl Matrix {
             string.push_str("]");
         } else {
             for e in 0..row.len() {
-                string.push_str(format!("{:11?}", row[e].re).as_str());                
-                if e != row.len() - 1 {string.push_str(",")}
+                string.push_str(format!("{:11?}", row[e].re).as_str());
+                if e != row.len() - 1 {
+                    string.push_str(",")
+                }
             }
             string.push_str("]");
         }
@@ -130,7 +143,9 @@ impl Matrix {
         } else if self.shape.0 == 1 {
             return format!(
                 "[{}], shape: {} x {}",
-                Self::fmt_line(&self.entries[0], show_im), self.shape.0, self.shape.1
+                Self::fmt_line(&self.entries[0], show_im),
+                self.shape.0,
+                self.shape.1
             );
         }
 
@@ -140,13 +155,17 @@ impl Matrix {
             string.push_str(format!(" {}", Self::fmt_line(&self.entries[r], show_im)).as_str());
             string.push('\n');
         }
-        string.push_str(format!(" {}], shape: {} x {}",
+        string.push_str(
+            format!(
+                " {}], shape: {} x {}",
                 Self::fmt_line(&self.entries[self.shape.0 - 1], show_im),
                 self.shape.0,
                 self.shape.1
-            ).as_str());
+            )
+            .as_str(),
+        );
         string.push('\n');
-        
+
         string
     }
 
@@ -160,18 +179,19 @@ impl Matrix {
                 }
             }
         }
-        
+
         if self.shape.0 == 0 {
             println!("[[]], shape: {} x {}", self.shape.0, self.shape.1);
             return;
         } else if self.shape.0 == 1 {
             println!(
                 "[{}], shape: {} x {}",
-                Self::fmt_line(&self.entries[0], show_im), self.shape.0, self.shape.1
+                Self::fmt_line(&self.entries[0], show_im),
+                self.shape.0,
+                self.shape.1
             );
             return;
         }
-        
 
         println!("[{},", Self::fmt_line(&self.entries[0], show_im));
         for r in 1..(self.shape.0 - 1) {
@@ -235,7 +255,13 @@ impl Matrix {
     }
 
     /// Return the upper triangular matrix or self.
-    pub fn random_upper_triangular(m: usize, n: usize, min: f64, max: f64, is_complex: bool) -> Matrix {
+    pub fn random_upper_triangular(
+        m: usize,
+        n: usize,
+        min: f64,
+        max: f64,
+        is_complex: bool,
+    ) -> Matrix {
         let mut result_matrix: Matrix = Self::zeros(m, n);
         let mut generator: rand::prelude::ThreadRng = rand::rng();
         if is_complex {
@@ -257,7 +283,13 @@ impl Matrix {
     }
 
     /// Return the lower triangular matrix or self.
-    pub fn random_lower_triangular(m: usize, n: usize, min: f64, max: f64, is_complex: bool) -> Matrix {
+    pub fn random_lower_triangular(
+        m: usize,
+        n: usize,
+        min: f64,
+        max: f64,
+        is_complex: bool,
+    ) -> Matrix {
         let mut result_matrix: Matrix = Self::zeros(m, n);
         let mut generator: rand::prelude::ThreadRng = rand::rng();
         if is_complex {
@@ -286,7 +318,6 @@ impl Matrix {
                 result_matrix.entries[r][r].re = generator.random_range(min..max);
                 result_matrix.entries[r][r].im = generator.random_range(min..max);
             }
-            
         } else {
             for r in 0..m {
                 result_matrix.entries[r][r].re = generator.random_range(min..max);
@@ -310,7 +341,9 @@ impl Matrix {
     pub fn arrange(start: f64, end: f64, step: f64) -> Result<Matrix, String> {
         if start < end {
             if step < 0.0 {
-                return Err("Input Error: Parameter step should be positive when start < end.".to_string());
+                return Err(
+                    "Input Error: Parameter step should be positive when start < end.".to_string(),
+                );
             } else {
                 let mut vector: Vec<Complex64> = Vec::new();
                 let mut current = start;
@@ -318,12 +351,14 @@ impl Matrix {
                     vector.push(Complex64::new(current, 0.0));
                     current += step;
                 }
-        
-                Ok(Matrix::new(&vec![vector]).unwrap().transpose())                
+
+                Ok(Matrix::new(&vec![vector]).unwrap().transpose())
             }
         } else {
             if step > 0.0 {
-                return Err("Input Error: Parameter step should be negative when start > end.".to_string());
+                return Err(
+                    "Input Error: Parameter step should be negative when start > end.".to_string(),
+                );
             } else {
                 let mut vector: Vec<Complex64> = Vec::new();
                 let mut current = start;
@@ -331,12 +366,12 @@ impl Matrix {
                     vector.push(Complex64::new(current, 0.0));
                     current += step;
                 }
-                
+
                 Ok(Matrix::new(&vec![vector]).unwrap().transpose())
             }
         }
     }
-    
+
     pub fn linspace(start: f64, end: f64, size: usize) -> Matrix {
         let mut vector: Vec<Complex64> = Vec::new();
         let mut current = start;
@@ -348,7 +383,7 @@ impl Matrix {
 
         Matrix::new(&vec![vector]).unwrap().transpose()
     }
-    
+
     /// Sum up all the entries in matrix.
     pub fn entries_sum(self: &Self) -> Complex64 {
         let mut entries_sum: Complex64 = Complex64::ZERO;
@@ -419,7 +454,7 @@ impl Matrix {
             }
         }
     }
-    
+
     /// Append a vector along the axis.
     ///
     /// &emsp; If axis == 0 : append vector to the bottom.
@@ -441,7 +476,7 @@ impl Matrix {
 
                 let mut result_matrix: Matrix = self.clone();
                 result_matrix.entries.push(vector.entries.clone());
-                
+
                 result_matrix.shape.0 += 1;
                 return Ok(result_matrix);
             }
@@ -455,7 +490,7 @@ impl Matrix {
                 for r in 0..result_matrix.shape.0 {
                     result_matrix.entries[r].push(vector.entries[r]);
                 }
-                
+
                 result_matrix.shape.1 += 1;
                 return Ok(result_matrix);
             }
@@ -573,7 +608,7 @@ impl Matrix {
         Ok(permutation * self)
     }
 
-    /// Return
+    /// Return the determinant of the matrix.
     pub fn determinant(self: &Self) -> Result<Complex64, String> {
         if !self.is_square() {
             return Err("Value Error: This matrix is not a square matrix.".to_string());
@@ -844,22 +879,19 @@ impl Matrix {
         for d in 0..self.shape.0.min(self.shape.1) {
             diagonal.push(self.entries[d][d]);
         }
-        
+
         Vector::new(&diagonal)
     }
 }
 
-
-
-
 impl Add<&Matrix> for &Matrix {
-    type Output = Matrix;    
+    type Output = Matrix;
     #[inline]
     fn add(self: Self, matrix: &Matrix) -> Matrix {
         if self.shape != matrix.shape {
             panic!("Matrix shapes do not match");
         }
-        
+
         let mut result_matrix: Matrix = self.clone();
         for r in 0..self.shape.0 {
             for c in 0..self.shape.1 {
@@ -973,7 +1005,6 @@ impl Mul<f64> for &Matrix {
             for c in 0..self.shape.1 {
                 result_matrix.entries[r][c] *= scalar;
             }
-
         }
 
         result_matrix
@@ -988,7 +1019,6 @@ impl Mul<Complex64> for &Matrix {
             for c in 0..self.shape.1 {
                 result_matrix.entries[r][c] *= scalar;
             }
-
         }
 
         result_matrix
@@ -1003,7 +1033,6 @@ impl Mul<&Matrix> for f64 {
             for c in 0..matrix.shape.1 {
                 result_matrix.entries[r][c] *= self;
             }
-
         }
 
         result_matrix
@@ -1018,7 +1047,6 @@ impl Mul<&Matrix> for Complex64 {
             for c in 0..matrix.shape.1 {
                 result_matrix.entries[r][c] *= self;
             }
-
         }
 
         result_matrix
@@ -1030,8 +1058,8 @@ impl Mul for &Matrix {
     fn mul(self: Self, matrix: &Matrix) -> Matrix {
         if self.shape.1 != matrix.shape.0 {
             panic!("Matrix shapes do not match");
-        } 
-        
+        }
+
         let mut result_matrix: Matrix = Matrix::zeros(self.shape.0, matrix.shape.1).clone();
         for r in 0..result_matrix.shape.0 {
             for c in 0..result_matrix.shape.1 {
@@ -1105,7 +1133,6 @@ impl Div<&Matrix> for Complex64 {
         }
     }
 }
-
 
 impl AddAssign for Matrix {
     #[inline]

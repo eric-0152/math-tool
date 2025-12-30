@@ -1,6 +1,9 @@
-use std::{ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign}, vec};
-use num_complex::Complex64;
 use crate::vector::Vector;
+use num_complex::Complex64;
+use std::{
+    ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
+    vec,
+};
 
 /// The coeff stores (scalar, [degree of variables])
 #[derive(Debug, Clone)]
@@ -9,16 +12,14 @@ pub struct MultiPoly {
     pub coeff: Vec<(Complex64, Vec<f64>)>,
 }
 
-
 impl MultiPoly {
-    
     pub fn zero(names: &Vec<String>) -> Self {
         MultiPoly {
             names: names.clone(),
             coeff: vec![(Complex64::ZERO, vec![0.0; names.len()])],
         }
     }
-    
+
     pub fn display(self: &Self) {
         let mut show_im = false;
         for e in 0..self.coeff.len() {
@@ -27,20 +28,37 @@ impl MultiPoly {
                 break;
             }
         }
-        
+
         print!("[");
         if show_im {
             for e in 0..self.coeff.len() {
                 if self.coeff[e].0.re != 0.0 || self.coeff[e].0.im != 0.0 {
                     if self.coeff[e].0.im >= 0.0 {
-                        print!("{}", format!("({:>8?} {:>8} j)", self.coeff[e].0.re, format!("+ {:<?}", self.coeff[e].0.im.abs())));
+                        print!(
+                            "{}",
+                            format!(
+                                "({:>8?} {:>8} j)",
+                                self.coeff[e].0.re,
+                                format!("+ {:<?}", self.coeff[e].0.im.abs())
+                            )
+                        );
                     } else {
-                        print!("{}", format!("({:>8?} {:>8} j)", self.coeff[e].0.re, format!("- {:<?}", self.coeff[e].0.im.abs())));
+                        print!(
+                            "{}",
+                            format!(
+                                "({:>8?} {:>8} j)",
+                                self.coeff[e].0.re,
+                                format!("- {:<?}", self.coeff[e].0.im.abs())
+                            )
+                        );
                     }
-                    
+
                     for name in 0..self.names.len() {
                         if self.coeff[e].1[name] != 0.0 {
-                            print!("({})", format!("{}^{}", self.names[name], self.coeff[e].1[name]));
+                            print!(
+                                "({})",
+                                format!("{}^{}", self.names[name], self.coeff[e].1[name])
+                            );
                         }
                     }
                     if e != (self.coeff.len() - 1) {
@@ -54,7 +72,10 @@ impl MultiPoly {
                     print!("{}", format!("({:>8?})", self.coeff[e].0.re));
                     for name in 0..self.names.len() {
                         if self.coeff[e].1[name] != 0.0 {
-                            print!("({})", format!("{}^{}", self.names[name], self.coeff[e].1[name]));
+                            print!(
+                                "({})",
+                                format!("{}^{}", self.names[name], self.coeff[e].1[name])
+                            );
                         }
                     }
                     if e != (self.coeff.len() - 1) {
@@ -70,44 +91,48 @@ impl MultiPoly {
         if r > n {
             return 0;
         }
-        
+
         let mut result = 1;
         for i in 0..r {
             result *= n - i;
             result /= i + 1;
         }
-        
+
         result
     }
     pub fn new(names: Vec<String>, coeff: Vec<(Complex64, Vec<f64>)>) -> Result<MultiPoly, String> {
         for d in 0..coeff.len() {
             if names.len() != coeff[d].1.len() {
-                return Err("Input Error: The number of names and coefficients do not match.".to_string());
-            }            
+                return Err(
+                    "Input Error: The number of names and coefficients do not match.".to_string(),
+                );
+            }
         }
-        
+
         Ok(MultiPoly { names, coeff })
     }
-    
+
     #[inline]
     pub fn evaluate(self: &Self, value: &Vector) -> Result<Complex64, String> {
         if self.names.len() != value.size {
-            return Err("Input Error: The number of names and value's size do not match.".to_string());
+            return Err(
+                "Input Error: The number of names and value's size do not match.".to_string(),
+            );
         }
-        
+
         let mut result: Complex64 = Complex64::new(0.0, 0.0);
         for (scalar, power) in self.coeff.iter() {
             let mut element: Complex64 = *scalar;
             for p in 0..power.len() {
                 element *= value.entries[p].powf(power[p]);
             }
-            
+
             result += element;
         }
-        
-        Ok(result)        
+
+        Ok(result)
     }
-    
+
     pub fn partial_derivative(self: &Self, name: String) -> Result<MultiPoly, String> {
         let mut name_exist: bool = false;
         for params_name in self.names.clone() {
@@ -117,9 +142,11 @@ impl MultiPoly {
             }
         }
         if !name_exist {
-            return Err("Input Error: The name of parameter does not exist in the MultiPoly.".to_string());
+            return Err(
+                "Input Error: The name of parameter does not exist in the MultiPoly.".to_string(),
+            );
         }
-        
+
         let mut result_poly: MultiPoly = MultiPoly::zero(&self.names);
         let name_index: usize = self.names.iter().position(|x| *x == name).unwrap();
         for idx in (0..self.coeff.len()).rev() {
@@ -133,9 +160,9 @@ impl MultiPoly {
 
         Ok(result_poly.remove_redundant())
     }
-    
+
     #[inline]
-    pub fn remove_redundant(self: &Self) -> MultiPoly {        
+    pub fn remove_redundant(self: &Self) -> MultiPoly {
         // Find same name pair
         let mut same_name_idx: Vec<(usize, usize)> = Vec::new();
         let mut names = self.names.clone();
@@ -150,7 +177,10 @@ impl MultiPoly {
         }
 
         // Build result_poly
-        let mut result_poly: MultiPoly = MultiPoly { names, coeff: Vec::new() };
+        let mut result_poly: MultiPoly = MultiPoly {
+            names,
+            coeff: Vec::new(),
+        };
         for d in (0..self.coeff.len()).rev() {
             if self.coeff[d].0 != Complex64::ZERO {
                 let mut degrees: Vec<f64> = self.coeff[d].1.clone();
@@ -161,7 +191,7 @@ impl MultiPoly {
                 result_poly.coeff.push((self.coeff[d].0, degrees));
             }
         }
-        
+
         // Combine same powers
         for second in (0..result_poly.coeff.len()).rev() {
             for first in (0..second).rev() {
@@ -173,15 +203,10 @@ impl MultiPoly {
                 }
             }
         }
-        
+
         result_poly
     }
-
 }
-
-
-
-
 
 impl Add<f64> for &MultiPoly {
     type Output = MultiPoly;
@@ -193,7 +218,7 @@ impl Add<f64> for &MultiPoly {
                 result_poly.coeff[e].0 += float;
             }
         }
-        
+
         result_poly.remove_redundant()
     }
 }
@@ -208,7 +233,7 @@ impl Add<&MultiPoly> for f64 {
                 result_poly.coeff[e].0 += self;
             }
         }
-        
+
         result_poly.remove_redundant()
     }
 }
@@ -223,7 +248,7 @@ impl Add<Complex64> for &MultiPoly {
                 result_poly.coeff[e].0 += complex;
             }
         }
-        
+
         result_poly.remove_redundant()
     }
 }
@@ -237,7 +262,7 @@ impl Add<&MultiPoly> for Complex64 {
                 result_poly.coeff[e].0 += self;
             }
         }
-        
+
         result_poly.remove_redundant()
     }
 }
@@ -338,7 +363,10 @@ impl Mul for &MultiPoly {
     fn mul(self, multipoly: &MultiPoly) -> Self::Output {
         let mut names: Vec<String> = self.names.clone();
         names.append(&mut multipoly.names.clone());
-        let mut result_poly: MultiPoly = MultiPoly { names, coeff: Vec::new() };
+        let mut result_poly: MultiPoly = MultiPoly {
+            names,
+            coeff: Vec::new(),
+        };
         for i in 0..self.coeff.len() {
             for j in 0..multipoly.coeff.len() {
                 let new_scalar: Complex64 = self.coeff[i].0 * multipoly.coeff[j].0;
@@ -380,7 +408,6 @@ impl Div<Complex64> for &MultiPoly {
         self * (1.0 / complex)
     }
 }
-
 
 impl AddAssign for MultiPoly {
     #[inline]
@@ -455,4 +482,3 @@ impl DivAssign<Complex64> for MultiPoly {
         *self = &self.clone() / other;
     }
 }
-

@@ -1,4 +1,4 @@
-use math_tool::{*, polynomial, to_polynomial};
+use math_tool::{polynomial, to_polynomial, *};
 
 #[test]
 fn divide_by() {

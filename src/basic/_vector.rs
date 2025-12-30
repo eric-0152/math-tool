@@ -1,7 +1,7 @@
-use std::ops::{Add, Mul, Sub, Div, AddAssign, SubAssign, MulAssign, DivAssign, Neg};
-use rand::Rng;
-use num_complex::Complex64;
 use crate::matrix::Matrix;
+use num_complex::Complex64;
+use rand::Rng;
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 #[derive(Clone, Debug)]
 pub struct Vector {
@@ -9,10 +9,8 @@ pub struct Vector {
     pub entries: Vec<Complex64>,
 }
 
-
-
 impl Vector {
-    pub fn new(vec: &Vec<Complex64>) -> Vector {        
+    pub fn new(vec: &Vec<Complex64>) -> Vector {
         Vector {
             size: vec.len(),
             entries: vec.clone(),
@@ -41,7 +39,7 @@ impl Vector {
                 continue;
             } else {
                 result_vector.entries[e].im = 0.0;
-            } 
+            }
         }
 
         result_vector
@@ -68,16 +66,30 @@ impl Vector {
                 break;
             }
         }
-        
+
         print!("[");
         if show_im {
             for e in 0..self.size {
                 if self.entries[e].im >= 0.0 {
-                    print!("{}", format!("{:>11?} {:>11}j", self.entries[e].re, format!("+ {:<?}", self.entries[e].im.abs())));
+                    print!(
+                        "{}",
+                        format!(
+                            "{:>11?} {:>11}j",
+                            self.entries[e].re,
+                            format!("+ {:<?}", self.entries[e].im.abs())
+                        )
+                    );
                 } else {
-                    print!("{}", format!("{:>11?} {:>11}j", self.entries[e].re, format!("- {:<?}", self.entries[e].im.abs())));
+                    print!(
+                        "{}",
+                        format!(
+                            "{:>11?} {:>11}j",
+                            self.entries[e].re,
+                            format!("- {:<?}", self.entries[e].im.abs())
+                        )
+                    );
                 }
-                
+
                 if e != (self.size - 1) {
                     print!(",");
                 }
@@ -91,7 +103,6 @@ impl Vector {
             }
         }
         println!("], size: {}", self.size);
-
     }
 
     /// Return a matrix contains all one entries with size m.
@@ -130,7 +141,9 @@ impl Vector {
     pub fn arrange(start: f64, end: f64, step: f64) -> Result<Vector, String> {
         if start < end {
             if step < 0.0 {
-                return Err("Input Error: Parameter step should be positive when start < end.".to_string());
+                return Err(
+                    "Input Error: Parameter step should be positive when start < end.".to_string(),
+                );
             } else {
                 let mut vector: Vec<Complex64> = Vec::new();
                 let mut current = start;
@@ -138,12 +151,14 @@ impl Vector {
                     vector.push(Complex64::new(current, 0.0));
                     current += step;
                 }
-        
-                Ok(Vector::new(&vector))                
+
+                Ok(Vector::new(&vector))
             }
         } else {
             if step > 0.0 {
-                return Err("Input Error: Parameter step should be negative when start > end.".to_string());
+                return Err(
+                    "Input Error: Parameter step should be negative when start > end.".to_string(),
+                );
             } else {
                 let mut vector: Vec<Complex64> = Vec::new();
                 let mut current = start;
@@ -151,12 +166,12 @@ impl Vector {
                     vector.push(Complex64::new(current, 0.0));
                     current += step;
                 }
-                
+
                 Ok(Vector::new(&vector))
             }
         }
     }
-    
+
     pub fn linspace(start: f64, end: f64, size: usize) -> Vector {
         let mut vector: Vec<Complex64> = Vec::new();
         let mut current = start;
@@ -168,7 +183,7 @@ impl Vector {
 
         Vector::new(&vector)
     }
-    
+
     /// Sum up all the entries in vector.
     pub fn entries_sum(self: &Self) -> Complex64 {
         let mut entries_sum: Complex64 = Complex64::ZERO;
@@ -183,7 +198,7 @@ impl Vector {
         if self.size != vector.size {
             return Err("Input Error: The sizes of vector do not match".to_string());
         }
-        
+
         let mut inner_product: Complex64 = Complex64::ZERO;
         for e in 0..self.size {
             inner_product += self.entries[e].conj() * vector.entries[e];
@@ -198,7 +213,7 @@ impl Vector {
         for e in 0..vector.size {
             result_vector.entries.push(vector.entries[e].clone());
         }
-        
+
         result_vector.size += vector.size;
         result_vector
     }
@@ -212,7 +227,7 @@ impl Vector {
 
         result_matrix
     }
-    
+
     pub fn as_matrix(self: &Self) -> Matrix {
         let mut result_matrix: Matrix = Matrix::zeros(self.size, 1);
         for e in 0..self.size {
@@ -221,7 +236,7 @@ impl Vector {
 
         result_matrix
     }
-    
+
     /// Return a diagonal matrix which has the entries from vector.
     pub fn to_diagonal(self: &Self) -> Matrix {
         let mut result_matrix: Matrix = Matrix::identity(self.size);
@@ -263,7 +278,7 @@ impl Vector {
                 "Input Error: The row size of permutation matrix does not match".to_string(),
             );
         }
-        
+
         Ok(permutation * self)
     }
 
@@ -273,7 +288,7 @@ impl Vector {
         for e in 0..self.size {
             distance += self.entries[e].re.powi(2);
             distance += self.entries[e].im.powi(2);
-        } 
+        }
 
         distance.sqrt()
     }
@@ -281,12 +296,12 @@ impl Vector {
     /// Normalize self to the length of 1.
     pub fn normalize(self: &Self) -> Vector {
         let mut result_vector: Vector = Vector::zeros(self.size);
-        let distance: f64 = self.norm();     
+        let distance: f64 = self.norm();
         if distance > 0.0 {
             for e in 0..self.size {
                 result_vector.entries[e] = self.entries[e] / distance;
             }
-        }   
+        }
 
         result_vector
     }
@@ -311,7 +326,6 @@ impl Vector {
         result_vector
     }
 }
-
 
 impl Add<&Vector> for &Vector {
     type Output = Vector;
@@ -503,7 +517,6 @@ impl Div<&Vector> for Complex64 {
         }
     }
 }
-
 
 impl AddAssign for Vector {
     #[inline]
