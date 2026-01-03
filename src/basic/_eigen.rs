@@ -18,7 +18,7 @@ pub fn rayleigh_quotient(eigenvector: &Vector, matrix_a: &Matrix) -> Complex64 {
 /// &emsp; ***A = QR*** => ***RQ = S*** => ***S = Q^(-1)QRQ*** => ***S = Q^(-1)AQ***
 #[inline]
 pub fn qr_similar_matrix(matrix: &Matrix) -> Result<Matrix, String> {
-    if matrix.shape.0 != matrix.shape.1 {
+    if matrix.row() != matrix.col() {
         return Err("Input Error: The matrix is not square.".to_string());
     }
 
@@ -42,8 +42,8 @@ pub fn shift_qr_algorithm(
 ) -> Result<(Matrix, f64), String> {
     match qr_similar_matrix(matrix) {
         Ok(mut matrix_similar) => {
-            let last_idx: usize = matrix_similar.shape.0 - 1;
-            let matrix_size: usize = matrix_similar.shape.0;
+            let last_idx: usize = matrix_similar.row() - 1;
+            let matrix_size: usize = matrix_similar.row();
             let mut last_eigenvalue: Complex64 = matrix_similar.entries[last_idx][last_idx];
             let mut error: f64 = 1.0;
             let mut step: u32 = 0;
@@ -66,19 +66,19 @@ pub fn shift_qr_algorithm(
 ///
 /// Using Faddeev-LeVerrier algorithm.
 pub fn characteristic_polynomial(matrix: &Matrix) -> Result<Polynomial, String> {
-    if matrix.shape.0 != matrix.shape.1 {
+    if matrix.row() != matrix.col() {
         return Err("Input Error: This matrix is not square.".to_string());
     }
 
-    let mut m = Matrix::identity(matrix.shape.0);
+    let mut m = Matrix::identity(matrix.row());
     let mut c = Complex64::ONE;
     let mut coefficient = vec![c];
-    for i in 0..matrix.shape.0 {
+    for i in 0..matrix.row() {
         let am = matrix * &m;
         c = -am.trace() / (i as f64 + 1.0);
         coefficient.push(c);
         m = am;
-        for d in 0..m.shape.0 {
+        for d in 0..m.row() {
             m.entries[d][d] += c;
         }
     }
@@ -91,7 +91,7 @@ pub fn characteristic_polynomial(matrix: &Matrix) -> Result<Polynomial, String> 
 ///
 /// Use the qr algorithm first to eliminate the lower triangular part of the matrix.
 pub fn eigenvalue(matrix: &Matrix) -> Result<Vector, String> {
-    if matrix.shape.0 != matrix.shape.1 {
+    if matrix.row() != matrix.col() {
         return Err("Input Error: This matrix is not square.".to_string());
     }
 
@@ -103,10 +103,10 @@ pub fn eigenvalue(matrix: &Matrix) -> Result<Vector, String> {
 }
 
 pub fn eigenvector(matrix: &Matrix, eigen_value: Complex64) -> Result<Matrix, String> {
-    if matrix.shape.0 != matrix.shape.1 {
+    if matrix.row() != matrix.col() {
         return Err("Input Error: The input matrix is not square.".to_string());
     }
 
-    let eigen_kernel: Matrix = &(&Matrix::identity(matrix.shape.0) * eigen_value) - matrix;
+    let eigen_kernel: Matrix = &(&Matrix::identity(matrix.row()) * eigen_value) - matrix;
     Ok(solve::null_space(&eigen_kernel))
 }

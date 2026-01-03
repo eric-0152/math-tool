@@ -59,7 +59,7 @@ impl Vector {
             Err(error_msg) => Err(format!("Operation Error: {error_msg}.")),
             Ok(mut file) => {
                 if write_im {
-                    for e in 0..vector.size {
+                    for e in 0..vector.size() {
                         let re: f64 = vector.entries[e].re;
                         let im: f64 = vector.entries[e].im;
                         if im >= 0.0 {
@@ -70,7 +70,7 @@ impl Vector {
                     }
                     write!(file, "\n").expect("Write new line.");
                 } else {
-                    for e in 0..vector.size {
+                    for e in 0..vector.size() {
                         write!(file, "{} ", vector.entries[e].re).expect("Write entrie.");
                     }
                     write!(file, "\n").expect("Write new line.");
@@ -208,8 +208,8 @@ impl Matrix {
             Err(error_msg) => Err(format!("Operation Error: {error_msg}.")),
             Ok(mut file) => {
                 if write_im {
-                    for r in 0..matrix.shape.0 {
-                        for c in 0..matrix.shape.1 {
+                    for r in 0..matrix.row() {
+                        for c in 0..matrix.col() {
                             let re: f64 = matrix.entries[r][c].re;
                             let im: f64 = matrix.entries[r][c].im;
                             if im >= 0.0 {
@@ -221,8 +221,8 @@ impl Matrix {
                         write!(file, "\n").expect("Write new line.");
                     }
                 } else {
-                    for r in 0..matrix.shape.0 {
-                        for c in 0..matrix.shape.1 {
+                    for r in 0..matrix.row() {
+                        for c in 0..matrix.col() {
                             write!(file, "{} ", matrix.entries[r][c].re).expect("Write entrie.");
                         }
                     }

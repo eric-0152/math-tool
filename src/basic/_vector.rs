@@ -5,7 +5,7 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssi
 
 #[derive(Clone, Debug)]
 pub struct Vector {
-    pub size: usize,
+    size: usize,
     pub entries: Vec<Complex64>,
 }
 
@@ -16,7 +16,11 @@ impl Vector {
             entries: vec.clone(),
         }
     }
-
+    
+    pub fn size(&self) -> usize {
+        self.size
+    }
+    
     /// Return the size that round to the digit after decimal point.
     pub fn round(self: &Self, digit: usize) -> Vector {
         let mut result_vector: Vector = self.clone();
@@ -240,7 +244,7 @@ impl Vector {
     /// Return a diagonal matrix which has the entries from vector.
     pub fn to_diagonal(self: &Self) -> Matrix {
         let mut result_matrix: Matrix = Matrix::identity(self.size);
-        for d in 0..result_matrix.shape.0 {
+        for d in 0..result_matrix.row() {
             result_matrix.entries[d][d] = self.entries[d];
         }
 
@@ -273,7 +277,7 @@ impl Vector {
 
     /// Swap the elements according to the order of permutaion matrix.
     pub fn swap_with_permutation(self: &Self, permutation: &Matrix) -> Result<Vector, String> {
-        if self.size != permutation.shape.0 {
+        if self.size != permutation.row() {
             return Err(
                 "Input Error: The row size of permutation matrix does not match".to_string(),
             );

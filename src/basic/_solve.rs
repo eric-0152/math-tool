@@ -5,14 +5,14 @@ use num_complex::Complex64;
 /// Given a upper triangular matrix ***A*** and vector ***b***, return a vector ***x***
 /// such that ***Ax*** = ***b***.
 pub fn upper_triangular(matrix: &Matrix, b: &Vector) -> Result<Vector, String> {
-    if matrix.shape.0 != b.size {
+    if matrix.row() != b.size() {
         return Err("Input Error: The size of input matrix and vector b do not match.".to_string());
     } else if !matrix.is_upper_triangular() {
         return Err("Input Error: The input matrix is not upper triangular.".to_string());
     }
 
-    let mut vector_x: Vector = Vector::zeros(matrix.shape.1);
-    let min_range: usize = matrix.shape.0.min(matrix.shape.1);
+    let mut vector_x: Vector = Vector::zeros(matrix.col());
+    let min_range: usize = matrix.row().min(matrix.col());
     for diag in (0..min_range).rev() {
         vector_x.entries[diag] = b.entries[diag] / matrix.entries[diag][diag];
         for prev in ((diag + 1)..min_range).rev() {
@@ -23,7 +23,7 @@ pub fn upper_triangular(matrix: &Matrix, b: &Vector) -> Result<Vector, String> {
     }
 
     // Check consistency
-    for e in 0..vector_x.size {
+    for e in 0..vector_x.size() {
         if vector_x.entries[e].is_nan() {
             return Err("Value Error: The system is not consistent".to_string());
         }
@@ -35,14 +35,14 @@ pub fn upper_triangular(matrix: &Matrix, b: &Vector) -> Result<Vector, String> {
 /// Given a lower triangular matrix ***A*** and vector ***b***, return a vector ***x***
 /// such that ***Ax*** = ***b***.
 pub fn lower_triangular(matrix: &Matrix, b: &Vector) -> Result<Vector, String> {
-    if matrix.shape.0 != b.size {
+    if matrix.row() != b.size() {
         return Err("Input Error: The size of input matrix and vector b do not match.".to_string());
     } else if !matrix.is_lower_triangular() {
         return Err("Input Error: The input matrix is not lower triangular.".to_string());
     }
 
-    let mut vector_x: Vector = Vector::zeros(matrix.shape.1);
-    let min_range = matrix.shape.0.min(matrix.shape.1);
+    let mut vector_x: Vector = Vector::zeros(matrix.col());
+    let min_range = matrix.row().min(matrix.col());
     for diag in 0..min_range {
         vector_x.entries[diag] = b.entries[diag] / matrix.entries[diag][diag];
         for prev in 0..diag {
@@ -53,7 +53,7 @@ pub fn lower_triangular(matrix: &Matrix, b: &Vector) -> Result<Vector, String> {
     }
 
     // Check consistency
-    for e in 0..vector_x.size {
+    for e in 0..vector_x.size() {
         if vector_x.entries[e].is_nan() {
             return Err("Value Error: The system is not consistent".to_string());
         }
@@ -72,7 +72,7 @@ pub fn gauss_jordan_elimination(
     matrix: &Matrix,
     b: &Vector,
 ) -> Result<(Matrix, Vector, Matrix), String> {
-    if matrix.shape.0 != b.size {
+    if matrix.row() != b.size() {
         return Err("Input Error: The size of input matrix and vector b do not match.".to_string());
     }
 
@@ -80,15 +80,15 @@ pub fn gauss_jordan_elimination(
     const THERESHOLD: f64 = 1e-4;
     let mut result_matrix: Matrix = matrix.clone();
     let mut result_vector: Vector = b.clone();
-    let mut permutation: Matrix = Matrix::identity(matrix.shape.0);
+    let mut permutation: Matrix = Matrix::identity(matrix.row());
     let mut pivot_row: usize = 0;
     let mut pivot_col: usize = 0;
     let mut last_operate: i32 = 0;
-    while pivot_row < result_matrix.shape.0 && pivot_col < result_matrix.shape.1 {
+    while pivot_row < result_matrix.row() && pivot_col < result_matrix.col() {
         // If the pivot is 0.0, swap to non zero.
         if result_matrix.entries[pivot_row][pivot_col].norm() < THERESHOLD {
             let mut is_swap = false;
-            for r in (pivot_row + 1)..result_matrix.shape.0 {
+            for r in (pivot_row + 1)..result_matrix.row() {
                 if result_matrix.entries[r][pivot_col] != Complex64::ZERO {
                     result_matrix = result_matrix.swap_row(pivot_row, r)?;
                     result_vector = result_vector.swap_element(pivot_row, r)?;
@@ -104,12 +104,12 @@ pub fn gauss_jordan_elimination(
             }
         }
 
-        for r in (pivot_row + 1)..result_matrix.shape.0 {
+        for r in (pivot_row + 1)..result_matrix.row() {
             let scale: Complex64 =
                 result_matrix.entries[r][pivot_col] / result_matrix.entries[pivot_row][pivot_col];
             let element: Complex64 = result_vector.entries[pivot_row];
             result_vector.entries[r] -= scale * element;
-            for e in 0..matrix.shape.1 {
+            for e in 0..matrix.col() {
                 let element: Complex64 = result_matrix.entries[pivot_row][e];
                 result_matrix.entries[r][e] -= scale * element;
             }
@@ -135,7 +135,7 @@ pub fn gauss_jordan_elimination(
                 result_matrix.entries[r][pivot_col] / result_matrix.entries[pivot_row][pivot_col];
             let element: Complex64 = result_vector.entries[pivot_row];
             result_vector.entries[r] -= scale * element;
-            for e in pivot_col..result_matrix.shape.1 {
+            for e in pivot_col..result_matrix.col() {
                 let element: Complex64 = result_matrix.entries[pivot_row][e];
                 result_matrix.entries[r][e] -= scale * element;
             }
@@ -145,12 +145,12 @@ pub fn gauss_jordan_elimination(
     }
 
     // Pivots -> 1
-    for r in 0..result_matrix.shape.0 {
+    for r in 0..result_matrix.row() {
         let scale: Complex64 = result_matrix.entries[r][r];
         if scale.norm() < THERESHOLD {
             continue;
         }
-        for c in r..result_matrix.shape.1 {
+        for c in r..result_matrix.col() {
             result_matrix.entries[r][c] /= scale;
         }
         result_vector.entries[r] /= scale;
@@ -161,7 +161,7 @@ pub fn gauss_jordan_elimination(
 
 /// ### Return a matrix contains the null basis
 pub fn null_space(matrix: &Matrix) -> Matrix {
-    let rref: Matrix = gauss_jordan_elimination(matrix, &Vector::zeros(matrix.shape.0))
+    let rref: Matrix = gauss_jordan_elimination(matrix, &Vector::zeros(matrix.row()))
         .unwrap()
         .0;
 
@@ -169,21 +169,21 @@ pub fn null_space(matrix: &Matrix) -> Matrix {
     // Each column only contains two element.
     const THERESHOLD: f64 = 1e-8;
     let mut null_relate: Matrix = Matrix::zeros(0, 0);
-    for r in (0..rref.shape.0.min(rref.shape.1)).rev() {
+    for r in (0..rref.row().min(rref.col())).rev() {
         let mut pivot = r;
         while rref.entries[r][pivot].norm() < THERESHOLD {
             pivot += 1;
-            if pivot == rref.shape.1 {
+            if pivot == rref.col() {
                 break;
             }
         }
 
-        for right in (pivot + 1)..rref.shape.1 {
+        for right in (pivot + 1)..rref.col() {
             if rref.entries[r][right].norm() < THERESHOLD {
                 continue;
             }
 
-            let mut relate_vector: Vector = Vector::zeros(rref.shape.1);
+            let mut relate_vector: Vector = Vector::zeros(rref.col());
             relate_vector.entries[pivot] = -1.0 * rref.entries[r][right];
             relate_vector.entries[right] = Complex64::ONE;
             null_relate = null_relate.append_vector(&relate_vector, 1).unwrap();
@@ -192,10 +192,10 @@ pub fn null_space(matrix: &Matrix) -> Matrix {
 
     // Combine columns if has the same bottom value.
     let mut null_basis: Matrix = Matrix::zeros(0, 0);
-    for r in (0..null_relate.shape.0).rev() {
-        let mut null_vector: Vector = Vector::zeros(rref.shape.1);
+    for r in (0..null_relate.row()).rev() {
+        let mut null_vector: Vector = Vector::zeros(rref.col());
         null_vector.entries[r] = Complex64::ONE;
-        for c in 0..null_relate.shape.1 {
+        for c in 0..null_relate.col() {
             if null_relate.entries[r][c] == Complex64::ONE {
                 for e in 0..r {
                     if null_relate.entries[e][c] != Complex64::ZERO {
@@ -207,7 +207,7 @@ pub fn null_space(matrix: &Matrix) -> Matrix {
         }
 
         let mut element_num: i32 = 0;
-        for e in 0..null_vector.size {
+        for e in 0..null_vector.size() {
             if null_vector.entries[e] != Complex64::ZERO {
                 element_num += 1;
             }
@@ -219,9 +219,9 @@ pub fn null_space(matrix: &Matrix) -> Matrix {
     }
 
     // Complete the eigenvector
-    for c in 0..rref.shape.1 {
+    for c in 0..rref.col() {
         let mut zero_num: usize = 0;
-        for r in 0..rref.shape.0 {
+        for r in 0..rref.row() {
             if rref.entries[r][c] == Complex64::ZERO {
                 zero_num += 1
             } else {
@@ -229,15 +229,15 @@ pub fn null_space(matrix: &Matrix) -> Matrix {
             }
         }
 
-        if zero_num == rref.shape.0 {
-            let mut zero_vector: Vector = Vector::zeros(rref.shape.1);
+        if zero_num == rref.row() {
+            let mut zero_vector: Vector = Vector::zeros(rref.col());
             zero_vector.entries[c] = Complex64::ONE;
             null_basis = null_basis.append_vector(&zero_vector, 1).unwrap();
         }
     }
-    if null_basis.shape.0 == 0 {
+    if null_basis.row() == 0 {
         null_basis = null_basis
-            .append_vector(&Vector::zeros(rref.shape.1), 1)
+            .append_vector(&Vector::zeros(rref.col()), 1)
             .unwrap();
     }
 

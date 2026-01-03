@@ -8,7 +8,7 @@ use std::{
 /// The coeff stores (scalar, [degree of variables])
 #[derive(Debug, Clone)]
 pub struct MultiPoly {
-    pub names: Vec<String>,
+    names: Vec<String>,
     pub coeff: Vec<(Complex64, Vec<f64>)>,
 }
 
@@ -19,7 +19,10 @@ impl MultiPoly {
             coeff: vec![(Complex64::ZERO, vec![0.0; names.len()])],
         }
     }
-
+    pub fn variables(&self) -> Vec<String> {
+        self.names.clone()
+    }
+    
     pub fn display(self: &Self) {
         let mut show_im = false;
         for e in 0..self.coeff.len() {
@@ -114,7 +117,7 @@ impl MultiPoly {
 
     #[inline]
     pub fn evaluate(self: &Self, value: &Vector) -> Result<Complex64, String> {
-        if self.names.len() != value.size {
+        if self.names.len() != value.size() {
             return Err(
                 "Input Error: The number of names and value's size do not match.".to_string(),
             );

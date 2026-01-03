@@ -7,11 +7,11 @@ impl Matrix {
     ///
     /// ### Return the matrix after rotation.
     pub fn givens_rotation(self: &Self, i: usize, j: usize, angle: f64) -> Result<Matrix, String> {
-        if i >= self.shape.0 || j >= self.shape.0 {
+        if i >= self.row() || j >= self.row() {
             return Err("Input Error: Parameter i or j is out of bound.".to_string());
         }
 
-        let mut rotation_matrix: Matrix = Matrix::identity(self.shape.0);
+        let mut rotation_matrix: Matrix = Matrix::identity(self.row());
         rotation_matrix.entries[i][i].re = angle.cos();
         rotation_matrix.entries[j][j].re = angle.cos();
         rotation_matrix.entries[j][i].re = angle.sin();
@@ -21,6 +21,6 @@ impl Matrix {
     }
 
     pub fn houserholder(vector: Vector) -> Matrix {
-        &Matrix::identity(vector.size) - &(2.0 * &(&vector.as_matrix() * &vector.transpose()))
+        &Matrix::identity(vector.size()) - &(2.0 * &(&vector.as_matrix() * &vector.transpose()))
     }
 }

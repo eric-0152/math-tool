@@ -5,18 +5,18 @@ use num_complex::Complex64;
 impl Matrix {
     /// ### Return a matrix which contains orthonormal basis.
     pub fn gram_schmidt(self: &Self) -> Result<Matrix, String> {
-        if self.shape.0 == 0 {
+        if self.row() == 0 {
             return Err("Value Error: This matrix has no column.".to_string());
         }
 
         let mut matrix: Matrix = self.clone();
-        if matrix.shape.0 < matrix.shape.1 {
+        if matrix.row() < matrix.col() {
             matrix = matrix.transpose();
         }
 
         let mut current_col: Vector = matrix.get_column_vector(0)?;
         let mut orthogonal_matrix: Matrix = current_col.as_matrix();
-        for c in 1..matrix.shape.1 {
+        for c in 1..matrix.col() {
             current_col = matrix.get_column_vector(c)?;
             let mut new_orthogonal: Vector = current_col.clone();
             for pre_c in 0..c {
@@ -31,7 +31,7 @@ impl Matrix {
         }
 
         let mut orthonormal_matrix: Matrix = Matrix::zeros(0, 0);
-        for c in 0..orthogonal_matrix.shape.1 {
+        for c in 0..orthogonal_matrix.col() {
             let column: Vector = orthogonal_matrix.get_column_vector(c).unwrap();
             let norm: f64 = column.norm();
             orthonormal_matrix = orthonormal_matrix.append_vector(&(&column / norm), 1)?;

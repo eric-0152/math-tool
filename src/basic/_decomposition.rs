@@ -15,13 +15,13 @@ impl Matrix {
     /// &emsp; ***P*** : Permutation matrix.
     pub fn lu(self: &Self) -> (Matrix, Matrix, Matrix) {
         let mut u: Matrix = self.clone();
-        let mut l: Matrix = Matrix::zeros(self.shape.0, self.shape.0);
-        let mut permutation: Matrix = Matrix::identity(self.shape.0);
-        for c in 0..self.shape.1.min(self.shape.0) {
+        let mut l: Matrix = Matrix::zeros(self.row(), self.row());
+        let mut permutation: Matrix = Matrix::identity(self.row());
+        for c in 0..self.col().min(self.row()) {
             // If the pivot is 0.0, swap to non zero.
             if u.entries[c][c] == Complex64::ZERO {
                 let mut is_swap = false;
-                for r in (c + 1)..u.shape.0 {
+                for r in (c + 1)..u.row() {
                     if u.entries[r][c] != Complex64::ZERO {
                         u = u.swap_row(c, r).unwrap();
                         l = l.swap_row(c, r).unwrap();
@@ -35,15 +35,15 @@ impl Matrix {
                 }
             }
 
-            for r in (c + 1)..self.shape.0 {
+            for r in (c + 1)..self.row() {
                 l.entries[r][c] = u.entries[r][c] / u.entries[c][c];
-                for e in 0..self.shape.1 {
+                for e in 0..self.col() {
                     let row_element: Complex64 = u.entries[c][e];
                     u.entries[r][e] -= l.entries[r][c] * row_element;
                 }
             }
         }
-        l = &l + &Matrix::identity(self.shape.0);
+        l = &l + &Matrix::identity(self.row());
         (l, u, permutation)
     }
 
@@ -60,8 +60,8 @@ impl Matrix {
     /// &emsp; ***P*** : Permutation matrix.
     pub fn ldv(self: &Self) -> Result<(Matrix, Matrix, Matrix, Matrix), String> {
         let (l, u, permutation) = self.lu();
-        let mut d: Matrix = Matrix::identity(self.shape.0);
-        for r in 0..self.shape.0.min(self.shape.1) {
+        let mut d: Matrix = Matrix::identity(self.row());
+        for r in 0..self.row().min(self.col()) {
             d.entries[r][r] = u.entries[r][r];
         }
 
@@ -86,8 +86,8 @@ impl Matrix {
             return Err("Value Error: This matrix is not a positive definite matrix.".to_string());
         }
 
-        let mut l: Matrix = Matrix::zeros(self.shape.0, self.shape.1);
-        for r in 0..l.shape.0 {
+        let mut l: Matrix = Matrix::zeros(self.row(), self.col());
+        for r in 0..l.row() {
             for c in 0..(r + 1) {
                 let mut summation: Complex64 = Complex64::ZERO;
                 if r == c {
@@ -121,12 +121,12 @@ impl Matrix {
         match self.cholesky_decomposition() {
             Err(error_msg) => Err(error_msg),
             Ok((matrix_c, _)) => {
-                let mut matrix_d: Matrix = Self::identity(self.shape.0);
+                let mut matrix_d: Matrix = Self::identity(self.row());
                 let mut matrix_l: Matrix = matrix_c.clone();
-                for d in 0..matrix_l.shape.1 {
+                for d in 0..matrix_l.col() {
                     matrix_d.entries[d][d] = matrix_c.entries[d][d].powi(2);
                     let inverse_sqrt_diagnol: Complex64 = matrix_d.entries[d][d].sqrt();
-                    for r in d..matrix_l.shape.0 {
+                    for r in d..matrix_l.row() {
                         matrix_l.entries[r][d] = matrix_c.entries[r][d] / inverse_sqrt_diagnol;
                     }
                 }
@@ -149,15 +149,15 @@ impl Matrix {
             Ok(mut matrix_q) => {
                 let mut matrix: Matrix = self.clone();
                 let mut has_transpose: bool = false;
-                if matrix.shape.0 < matrix.shape.1 {
+                if matrix.row() < matrix.col() {
                     has_transpose = true;
                     matrix = matrix.transpose();
                 }
 
-                let mut matrix_r: Matrix = Matrix::zeros(matrix.shape.1, matrix.shape.1);
-                for r in 0..matrix_r.shape.0 {
+                let mut matrix_r: Matrix = Matrix::zeros(matrix.col(), matrix.col());
+                for r in 0..matrix_r.row() {
                     let orthonormal_col: Vector = matrix_q.get_column_vector(r)?;
-                    for c in r..matrix_r.shape.1 {
+                    for c in r..matrix_r.col() {
                         matrix_r.entries[r][c] = matrix
                             .get_column_vector(c)?
                             .inner_product(&orthonormal_col)?;
@@ -191,7 +191,7 @@ impl Matrix {
             Ok(mut eigenvalue) => {
                 // Get eigenvalue
                 const THERESHOLD: f64 = 1e-8;
-                for e in (0..eigenvalue.size).rev() {
+                for e in (0..eigenvalue.size()).rev() {
                     if eigenvalue.entries[e].re.abs() < THERESHOLD
                         && eigenvalue.entries[e].im.abs() < THERESHOLD
                     {
@@ -201,9 +201,9 @@ impl Matrix {
 
                 // Build V^T
                 let mut vt: Matrix = Matrix::zeros(0, 0);
-                for e in 0..eigenvalue.size {
+                for e in 0..eigenvalue.size() {
                     let eigenvector: Matrix = eigen::eigenvector(&ata, eigenvalue.entries[e])?;
-                    for c in 0..eigenvector.shape.1 {
+                    for c in 0..eigenvector.col() {
                         vt = vt.append_matrix(
                             &eigenvector.get_column_vector(c)?.normalize().transpose(),
                             0,
@@ -216,7 +216,7 @@ impl Matrix {
 
                 // Build U
                 let mut u: Matrix = Matrix::zeros(0, 0);
-                for r in 0..vt.shape.0 {
+                for r in 0..vt.row() {
                     u = u.append_vector(
                         &(&(self * &vt.get_row_vector(r)?) / sigma.entries[r][r]),
                         1,

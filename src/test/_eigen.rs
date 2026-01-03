@@ -28,9 +28,9 @@ fn eigenvalue() {
     const THERESHOLD: f64 = 1e-5;
     let matrix = Matrix::random_matrix(5, 5, -100.0, 100.0, true);
     let eigenvalue = eigen::eigenvalue(&matrix).unwrap();
-    for e in 0..eigenvalue.size {
+    for e in 0..eigenvalue.size() {
         let eigen_kernel: Matrix =
-            &(&Matrix::identity(matrix.shape.0) * eigenvalue.entries[e]) - &matrix;
+            &(&Matrix::identity(matrix.row()) * eigenvalue.entries[e]) - &matrix;
         assert!(eigen_kernel.determinant().unwrap().norm_sqr() < THERESHOLD);
     }
 }

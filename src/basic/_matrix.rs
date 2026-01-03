@@ -5,7 +5,7 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssi
 
 #[derive(Clone, Debug)]
 pub struct Matrix {
-    pub shape: (usize, usize),
+    shape: (usize, usize),
     pub entries: Vec<Vec<Complex64>>,
 }
 
@@ -25,6 +25,18 @@ impl Matrix {
             shape: (double_vec.len(), double_vec[0].len()),
             entries: double_vec.clone(),
         })
+    }
+
+    pub fn row(&self) -> usize {
+        self.shape.0
+    }
+
+    pub fn col(&self) -> usize {
+        self.shape.1
+    }
+
+    pub fn shape(&self) -> (usize, usize) {
+        self.shape
     }
 
     /// Return the selected column as a vector.
@@ -470,7 +482,7 @@ impl Matrix {
 
         match axis {
             x if x == 0 => {
-                if self.shape.1 != vector.size {
+                if self.shape.1 != vector.size() {
                     return Err("Input Error: The size of vector does not match .".to_string());
                 }
 
@@ -482,7 +494,7 @@ impl Matrix {
             }
 
             x if x == 1 => {
-                if self.shape.0 != vector.size {
+                if self.shape.0 != vector.size() {
                     return Err("Input Error: The size of vector does not match .".to_string());
                 }
 
@@ -1076,7 +1088,7 @@ impl Mul<&Vector> for &Matrix {
     type Output = Vector;
     #[inline]
     fn mul(self: Self, vector: &Vector) -> Vector {
-        if self.shape.1 != vector.size {
+        if self.shape.1 != vector.size() {
             panic!("Matrix column and vector size do not match.");
         }
         let mut result_vector: Vector = Vector::zeros(self.shape.0).clone();

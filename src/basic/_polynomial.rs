@@ -5,7 +5,7 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssi
 /// Coefficient of the poly is start from constant
 #[derive(Clone, Debug)]
 pub struct Polynomial {
-    pub degree: usize,
+    degree: usize,
     pub coeff: Vec<Complex64>,
 }
 
@@ -36,7 +36,11 @@ impl Polynomial {
             coeff: vec![Complex64::ONE],
         }
     }
-
+    
+    pub fn degree(&self) -> usize {
+        self.degree
+    }
+    
     pub fn display(self: &Self) {
         let mut show_im = false;
         for e in 0..self.coeff.len() {
@@ -149,7 +153,6 @@ impl Polynomial {
         let mut quotient: Polynomial = Polynomial::zero();
         let degree_one = Polynomial::new(&vec![Complex64::ZERO, Complex64::ONE]);
         let mut degree_diff: usize = remainder.degree - divider.degree;
-        println!(" ");
         loop {
             if remainder.coeff.len() < divider.coeff.len() {
                 break;
@@ -174,12 +177,12 @@ impl Polynomial {
         (quotient, remainder)
     }
 
+    #[inline]
     pub fn evaluate(self: &Self, value: &Complex64) -> Complex64 {
-        let mut result: Complex64 = Complex64::new(self.coeff[0].re, self.coeff[0].im);
+        let mut result: Complex64 = self.coeff[0];
         let mut power: i32 = 1;
         for d in 1..self.coeff.len() {
-            let element: Complex64 = self.coeff[d] * value.powi(power);
-            result += element;
+            result += self.coeff[d] * value.powi(power);
             power += 1;
         }
 
@@ -260,9 +263,9 @@ pub fn laguerre_method(poly: &Polynomial) -> Result<Complex64, String> {
     let deg: f64 = poly.degree as f64;
     let deg_m: f64 = deg - 1.0;
     const THRESHOLD: f64 = 1e-16;
-    const MAX_ITER: u32 = 100;
+    const MAX_ITER: u32 = 1000;
     let mut iter: u32 = 0;
-    while poly.evaluate(&x).norm_sqr() > THRESHOLD && iter < MAX_ITER {
+    while poly.evaluate(&x).norm() > THRESHOLD && iter < MAX_ITER {
         let fx: Complex64 = poly.evaluate(&x);
         let dfx: Complex64 = derivative.evaluate(&x);
         let ddfx: Complex64 = second_derivative.evaluate(&x);
@@ -278,7 +281,7 @@ pub fn laguerre_method(poly: &Polynomial) -> Result<Complex64, String> {
 
         iter += 1;
     }
-
+    println!("{iter}");
     Ok(x)
 }
 
@@ -293,10 +296,8 @@ pub fn find_root(poly: &Polynomial) -> Result<Vector, String> {
                 return Err(error_msg);
             }
             Ok(new_root) => {
-                roots = roots.append(&Vector {
-                    size: 1,
-                    entries: vec![new_root],
-                });
+                
+                roots = roots.append(&Vector::new(&vec![new_root]));
                 let (quotient, remainder) =
                     current_poly.divide_by(&Polynomial::new(&vec![-new_root, Complex64::ONE]));
                 current_poly = quotient;
@@ -304,14 +305,17 @@ pub fn find_root(poly: &Polynomial) -> Result<Vector, String> {
             }
         }
     }
-
-    roots.entries[roots.size - 1] -= last_residual;
+    let last_index = roots.size() - 1;
+    roots.entries[last_index] -= last_residual;
     roots
         .entries
         .sort_by(|a, b| a.re.partial_cmp(&b.re).unwrap());
     roots.entries.reverse();
     Ok(roots)
 }
+
+
+
 
 impl Add<f64> for &Polynomial {
     type Output = Polynomial;
