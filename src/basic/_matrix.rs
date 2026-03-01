@@ -1,6 +1,7 @@
 use crate::vector::Vector;
 use num_complex::Complex64;
 use rand::Rng;
+use rayon::prelude::*;
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 #[derive(Clone, Debug)]
@@ -905,9 +906,11 @@ impl Add<&Matrix> for &Matrix {
         }
 
         let mut result_matrix: Matrix = self.clone();
-        for r in 0..self.shape.0 {
-            for c in 0..self.shape.1 {
-                result_matrix.entries[r][c] += matrix.entries[r][c];
+        let mut matrix_r = matrix.entries.iter();
+        for r in result_matrix.entries.iter_mut() {
+            let mut matrix_c = matrix_r.next().unwrap().iter();
+            for c in r.iter_mut() {
+                *c += matrix_c.next().unwrap();
             }
         }
 
@@ -920,9 +923,9 @@ impl Add<f64> for &Matrix {
     #[inline]
     fn add(self: Self, constant: f64) -> Matrix {
         let mut result_matrix: Matrix = self.clone();
-        for r in 0..self.shape.0 {
-            for c in 0..self.shape.1 {
-                result_matrix.entries[r][c] += constant;
+        for r in result_matrix.entries.iter_mut() {
+            for c in r.iter_mut() {
+                *c += constant;
             }
         }
 
@@ -934,9 +937,9 @@ impl Add<Complex64> for &Matrix {
     #[inline]
     fn add(self: Self, constant: Complex64) -> Matrix {
         let mut result_matrix: Matrix = self.clone();
-        for r in 0..self.shape.0 {
-            for c in 0..self.shape.1 {
-                result_matrix.entries[r][c] += constant;
+        for r in result_matrix.entries.iter_mut() {
+            for c in r.iter_mut() {
+                *c += constant;
             }
         }
 
@@ -947,28 +950,14 @@ impl Add<&Matrix> for f64 {
     type Output = Matrix;
     #[inline]
     fn add(self: Self, matrix: &Matrix) -> Matrix {
-        let mut result_matrix: Matrix = matrix.clone();
-        for r in 0..matrix.shape.0 {
-            for c in 0..matrix.shape.1 {
-                result_matrix.entries[r][c] += self;
-            }
-        }
-
-        result_matrix
+        matrix + self
     }
 }
 impl Add<&Matrix> for Complex64 {
     type Output = Matrix;
     #[inline]
     fn add(self: Self, matrix: &Matrix) -> Matrix {
-        let mut result_matrix: Matrix = matrix.clone();
-        for r in 0..matrix.shape.0 {
-            for c in 0..matrix.shape.1 {
-                result_matrix.entries[r][c] += self;
-            }
-        }
-
-        result_matrix
+        matrix + self
     }
 }
 
@@ -1013,9 +1002,9 @@ impl Mul<f64> for &Matrix {
     #[inline]
     fn mul(self: Self, scalar: f64) -> Matrix {
         let mut result_matrix: Matrix = self.clone();
-        for r in 0..self.shape.0 {
-            for c in 0..self.shape.1 {
-                result_matrix.entries[r][c] *= scalar;
+        for r in result_matrix.entries.iter_mut() {
+            for c in r.iter_mut() {
+                *c *= scalar;
             }
         }
 
@@ -1027,9 +1016,9 @@ impl Mul<Complex64> for &Matrix {
     #[inline]
     fn mul(self: Self, scalar: Complex64) -> Matrix {
         let mut result_matrix: Matrix = self.clone();
-        for r in 0..self.shape.0 {
-            for c in 0..self.shape.1 {
-                result_matrix.entries[r][c] *= scalar;
+        for r in result_matrix.entries.iter_mut() {
+            for c in r.iter_mut() {
+                *c *= scalar;
             }
         }
 
@@ -1040,28 +1029,14 @@ impl Mul<&Matrix> for f64 {
     type Output = Matrix;
     #[inline]
     fn mul(self: Self, matrix: &Matrix) -> Matrix {
-        let mut result_matrix: Matrix = matrix.clone();
-        for r in 0..matrix.shape.0 {
-            for c in 0..matrix.shape.1 {
-                result_matrix.entries[r][c] *= self;
-            }
-        }
-
-        result_matrix
+        matrix * self
     }
 }
 impl Mul<&Matrix> for Complex64 {
     type Output = Matrix;
     #[inline]
     fn mul(self: Self, matrix: &Matrix) -> Matrix {
-        let mut result_matrix: Matrix = matrix.clone();
-        for r in 0..matrix.shape.0 {
-            for c in 0..matrix.shape.1 {
-                result_matrix.entries[r][c] *= self;
-            }
-        }
-
-        result_matrix
+        matrix * self
     }
 }
 impl Mul for &Matrix {
@@ -1071,7 +1046,7 @@ impl Mul for &Matrix {
         if self.shape.1 != matrix.shape.0 {
             panic!("Matrix shapes do not match");
         }
-
+        // NEED OPTIMIZE
         let mut result_matrix: Matrix = Matrix::zeros(self.shape.0, matrix.shape.1).clone();
         for r in 0..result_matrix.shape.0 {
             for c in 0..result_matrix.shape.1 {
@@ -1080,6 +1055,23 @@ impl Mul for &Matrix {
                 }
             }
         }
+
+        // let mut matrix_iters = Vec::new();
+        // for r in matrix.entries.iter() {
+        //     matrix_iters.push(r.iter().clone());
+        // }
+
+        // for r in result_matrix.entries.iter_mut() {
+        //     for c in r.iter_mut() {
+        //         let mut matrix_iter_iters = matrix_iters.iter();
+        //         for self_r in self.entries.iter() {
+        //             for self_c in self_r {
+        //                 let mut matrix_r = matrix_iter_iters.next().unwrap();
+        //                 *c += self_c * matrix_r.next().unwrap();
+        //             }
+        //         }
+        //     }
+        // }
 
         result_matrix
     }
@@ -1091,10 +1083,14 @@ impl Mul<&Vector> for &Matrix {
         if self.shape.1 != vector.size() {
             panic!("Matrix column and vector size do not match.");
         }
+
         let mut result_vector: Vector = Vector::zeros(self.shape.0).clone();
-        for r in 0..self.shape.0 {
-            for c in 0..self.shape.1 {
-                result_vector.entries[r] += self.entries[r][c] * vector.entries[c];
+        let mut result_vector_iter = result_vector.entries.iter_mut();
+        for r in self.entries.iter() {
+            let mut vector_iter = vector.entries.iter();
+            let result_vector_e = result_vector_iter.next().unwrap();
+            for c in r.iter() {
+                *result_vector_e += c * vector_iter.next().unwrap();
             }
         }
 
@@ -1106,10 +1102,10 @@ impl Div<f64> for &Matrix {
     #[inline]
     fn div(self: Self, scalar: f64) -> Matrix {
         if scalar != 0.0 {
-            self * (1.0 / scalar)
-        } else {
-            panic!("Division by zero");
+            panic!("Divide by zero");
         }
+
+        self * (1.0 / scalar)
     }
 }
 impl Div<Complex64> for &Matrix {
@@ -1117,32 +1113,42 @@ impl Div<Complex64> for &Matrix {
     #[inline]
     fn div(self: Self, scalar: Complex64) -> Matrix {
         if scalar != Complex64::ZERO {
-            self * (1.0 / scalar)
-        } else {
-            panic!("Division by zero");
+            panic!("Divide by zero");
         }
+
+        self * (1.0 / scalar)
     }
 }
 impl Div<&Matrix> for f64 {
     type Output = Matrix;
     #[inline]
     fn div(self: Self, matrix: &Matrix) -> Matrix {
-        if self != 0.0 {
-            matrix * (1.0 / self)
-        } else {
-            panic!("Division by zero");
+        let mut result_matrix = Matrix::zeros(matrix.row(), matrix.col());
+        let mut matrix_r = matrix.entries.iter();
+        for r in result_matrix.entries.iter_mut() {
+            let mut matrix_c = matrix_r.next().unwrap().iter();
+            for c in r.iter_mut() {
+                *c += self / matrix_c.next().unwrap();
+            }
         }
+
+        result_matrix
     }
 }
 impl Div<&Matrix> for Complex64 {
     type Output = Matrix;
     #[inline]
     fn div(self: Self, matrix: &Matrix) -> Matrix {
-        if self != Complex64::ZERO {
-            matrix * (1.0 / self)
-        } else {
-            panic!("Division by zero");
+        let mut result_matrix = Matrix::zeros(matrix.row(), matrix.col());
+        let mut matrix_r = matrix.entries.iter();
+        for r in result_matrix.entries.iter_mut() {
+            let mut matrix_c = matrix_r.next().unwrap().iter();
+            for c in r.iter_mut() {
+                *c += self / matrix_c.next().unwrap();
+            }
         }
+
+        result_matrix
     }
 }
 

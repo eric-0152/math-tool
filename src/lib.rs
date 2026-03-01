@@ -26,6 +26,15 @@ pub mod preprocessing;
 #[path = "optimize/_regression.rs"]
 pub mod regression;
 
+#[path = "ML/_model.rs"]
+pub mod model;
+#[path = "ML/_compute_graph.rs"]
+pub mod compute_graph;
+#[path = "ML/_param.rs"]
+pub mod param;
+#[path = "ML/_optimizer.rs"]
+pub mod optimizer;
+
 #[macro_export]
 macro_rules! to_matrix {
     (

@@ -16,11 +16,11 @@ impl Vector {
             entries: vec.clone(),
         }
     }
-    
+
     pub fn size(&self) -> usize {
         self.size
     }
-    
+
     /// Return the size that round to the digit after decimal point.
     pub fn round(self: &Self, digit: usize) -> Vector {
         let mut result_vector: Vector = self.clone();
@@ -335,9 +335,13 @@ impl Add<&Vector> for &Vector {
     type Output = Vector;
     #[inline]
     fn add(self: Self, vector: &Vector) -> Vector {
+        if self.size != vector.size {
+            panic!("The size of two vectors are not equal.")
+        }
         let mut result_vector: Vector = self.clone();
-        for e in 0..self.size {
-            result_vector.entries[e] += vector.entries[e];
+        let mut vector_iter = vector.entries.iter();
+        for e in result_vector.entries.iter_mut() {
+            *e += vector_iter.next().unwrap();
         }
 
         result_vector
@@ -348,8 +352,8 @@ impl Add<f64> for &Vector {
     #[inline]
     fn add(self: Self, constant: f64) -> Vector {
         let mut result_vector: Vector = self.clone();
-        for e in 0..self.size {
-            result_vector.entries[e] += constant;
+        for e in result_vector.entries.iter_mut() {
+            *e += constant;
         }
 
         result_vector
@@ -360,8 +364,8 @@ impl Add<Complex64> for &Vector {
     #[inline]
     fn add(self: Self, constant: Complex64) -> Vector {
         let mut result_vector: Vector = self.clone();
-        for e in 0..self.size {
-            result_vector.entries[e] += constant;
+        for e in result_vector.entries.iter_mut() {
+            *e += constant;
         }
 
         result_vector
@@ -371,24 +375,14 @@ impl Add<&Vector> for f64 {
     type Output = Vector;
     #[inline]
     fn add(self: Self, vector: &Vector) -> Vector {
-        let mut result_vector: Vector = vector.clone();
-        for e in 0..vector.size {
-            result_vector.entries[e] += self;
-        }
-
-        result_vector
+        vector + self
     }
 }
 impl Add<&Vector> for Complex64 {
     type Output = Vector;
     #[inline]
     fn add(self: Self, vector: &Vector) -> Vector {
-        let mut result_vector: Vector = vector.clone();
-        for e in 0..vector.size {
-            result_vector.entries[e] += self;
-        }
-
-        result_vector
+        vector + self
     }
 }
 
@@ -433,8 +427,8 @@ impl Mul<f64> for &Vector {
     #[inline]
     fn mul(self: Self, scalar: f64) -> Vector {
         let mut result_vector: Vector = self.clone();
-        for e in 0..self.size {
-            result_vector.entries[e] *= scalar;
+        for e in result_vector.entries.iter_mut() {
+            *e *= scalar;
         }
 
         result_vector
@@ -445,8 +439,8 @@ impl Mul<Complex64> for &Vector {
     #[inline]
     fn mul(self: Self, scalar: Complex64) -> Vector {
         let mut result_vector: Vector = self.clone();
-        for e in 0..self.size {
-            result_vector.entries[e] *= scalar;
+        for e in result_vector.entries.iter_mut() {
+            *e *= scalar;
         }
 
         result_vector
@@ -456,24 +450,14 @@ impl Mul<&Vector> for f64 {
     type Output = Vector;
     #[inline]
     fn mul(self: Self, vector: &Vector) -> Vector {
-        let mut result_vector: Vector = vector.clone();
-        for e in 0..result_vector.size {
-            result_vector.entries[e] *= self;
-        }
-
-        result_vector
+        vector * self
     }
 }
 impl Mul<&Vector> for Complex64 {
     type Output = Vector;
     #[inline]
     fn mul(self: Self, vector: &Vector) -> Vector {
-        let mut result_vector: Vector = vector.clone();
-        for e in 0..result_vector.size {
-            result_vector.entries[e] *= self;
-        }
-
-        result_vector
+        vector * self
     }
 }
 
@@ -481,44 +465,47 @@ impl Div<f64> for &Vector {
     type Output = Vector;
     #[inline]
     fn div(self: Self, scalar: f64) -> Vector {
-        if scalar != 0.0 {
-            self * (1.0 / scalar)
-        } else {
+        if scalar == 0.0 {
             panic!("Division by zero");
         }
+
+        self * (1.0 / scalar)
     }
 }
 impl Div<Complex64> for &Vector {
     type Output = Vector;
     #[inline]
     fn div(self: Self, scalar: Complex64) -> Vector {
-        if scalar != Complex64::ZERO {
-            self * (1.0 / scalar)
-        } else {
+        if scalar == Complex64::ZERO {
             panic!("Division by zero");
         }
+        self * (1.0 / scalar)
     }
 }
 impl Div<&Vector> for f64 {
     type Output = Vector;
     #[inline]
     fn div(self: Self, vector: &Vector) -> Vector {
-        if self != 0.0 {
-            (1.0 / self) * vector
-        } else {
-            panic!("Division by zero");
+        let mut result_vector = Vector::zeros(vector.size());
+        let mut vector_iter = vector.entries.iter();
+        for e in result_vector.entries.iter_mut() {
+            *e = self / vector_iter.next().unwrap();
         }
+
+        result_vector
     }
 }
 impl Div<&Vector> for Complex64 {
     type Output = Vector;
     #[inline]
     fn div(self: Self, vector: &Vector) -> Vector {
-        if self != Complex64::ZERO {
-            (1.0 / self) * vector
-        } else {
-            panic!("Division by zero");
+        let mut result_vector = Vector::zeros(vector.size());
+        let mut vector_iter = vector.entries.iter();
+        for e in result_vector.entries.iter_mut() {
+            *e = self / vector_iter.next().unwrap();
         }
+
+        result_vector
     }
 }
 
